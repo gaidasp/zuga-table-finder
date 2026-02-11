@@ -1,0 +1,10 @@
+.DS_Store
+node_modules
+.svelte-kit
+build
+coverage
+.vscode
+.env
+.env.local
+.env.*.local
+.vercel

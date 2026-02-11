@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap');
+@config "../tailwind.config.js";
+@import "tailwindcss";
+@plugin "daisyui";
+
+
+@plugin "daisyui/theme" {
+  name: "zuga-theme";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(28% 0.091 267.935);
+  --color-base-200: oklch(42% 0.199 265.638);
+  --color-base-300: oklch(62% 0.214 259.815);
+  --color-base-content: oklch(97% 0.014 254.604);
+  --color-primary: oklch(65% 0.241 354.308);
+  --color-primary-content: oklch(97% 0.014 343.198);
+  --color-secondary: oklch(90% 0.182 98.111);
+  --color-secondary-content: oklch(28% 0.066 53.813);
+  --color-accent: oklch(55% 0.288 302.321);
+  --color-accent-content: oklch(97% 0.014 308.299);
+  --color-neutral: oklch(23.04% 0.065 269.31);
+  --color-neutral-content: oklch(97% 0.014 254.604);
+  --color-info: oklch(72.06% 0.191 231.6);
+  --color-info-content: oklch(29% 0.066 243.157);
+  --color-success: oklch(79% 0.209 151.711);
+  --color-success-content: oklch(0% 0 0);
+  --color-warning: oklch(84.71% 0.199 83.87);
+  --color-warning-content: oklch(28% 0.066 53.813);
+  --color-error: oklch(58% 0.253 17.585);
+  --color-error-content: oklch(96% 0.015 12.422);
+  --radius-selector: 2rem;
+  --radius-field: 1rem;
+  --radius-box: 2rem;
+  --size-selector: 0.28125rem;
+  --size-field: 0.25rem;
+  --border: 1.5px;
+  --depth: 0;
+  --noise: 1;
+}
+
+
+
+
+:root {
+  color-scheme: light;
+}
+
+
+
+body {
+  @apply bg-base-200 text-base-content;
+  font-family: 'Figtree', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  max-width: none;
+}
