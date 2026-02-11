@@ -12,6 +12,7 @@
   import DeleteTableModal from '$lib/components/modals/DeleteTableModal.svelte';
   import DeletePlayerModal from '$lib/components/modals/DeletePlayerModal.svelte';
   import DetailTableModal from '$lib/components/modals/DetailTableModal.svelte';
+  import DetailPlayerModal from '$lib/components/modals/DetailPlayerModal.svelte';
   import NightDatePicker from '$lib/components/NightDatePicker.svelte';
   import { getDefaultNightDate } from '$lib/utils/date';
 
@@ -51,6 +52,8 @@
     $state(null);
   let tableToEdit: Table | null = $state(null);
   let selectedTableId: string | null = $state(null);
+  let detailPlayerData: { tableId: string; player: Player } | null = $state(null);
+  let detailPlayerData: { tableId: string; player: Player } | null = $state(null);
 
   let defaultTitle = $state('');
   let defaultDescription = $state('');
@@ -192,8 +195,31 @@
     return reloadData(nightDate);
   };
 
+  const handleOpenDetailPlayer = (tableId: string, player: Player) => {
+    detailPlayerData = { tableId, player };
+  };
+
+  const handleCloseDetailPlayer = () => {
+    detailPlayerData = null;
+  };
+
+  const handleDetailPlayerDeleted = (event: any) => {
+    if (detailPlayerData) {
+      playerToDelete = { 
+        tableId: detailPlayerData.tableId, 
+        playerId: event.id, 
+        playerName: event.name 
+      };
+      detailPlayerData = null;
+    }
+  };
+
   const selectedTableDetails = $derived(
     selectedTableId ? (pageData.tables.find((table) => table.id === selectedTableId) ?? null) : null
+  );
+
+  const detailPlayerTable = $derived(
+    detailPlayerData ? (pageData.tables.find((table) => table.id === detailPlayerData.tableId) ?? null) : null
   );
 </script>
 
@@ -257,6 +283,7 @@
               onEditTable={openEditTable}
               onExpandTable={handleExpandTable}
               onDeletePlayer={handleDeletePlayer}
+              onOpenDetailPlayer={handleOpenDetailPlayer}
             />
           {/each}
         </div>
@@ -362,3 +389,16 @@
   close={handleCloseDeletePlayer}
   deleted={handlePlayerDeleted}
 />
+
+{#if detailPlayerData && detailPlayerTable}
+  <DetailPlayerModal
+    player={detailPlayerData.player}
+    open={true}
+    zIndex={baseZIndex + 2}
+    players={detailPlayerTable.players}
+    tableId={detailPlayerData.tableId}
+    close={handleCloseDetailPlayer}
+    saved={handleSavePlayer}
+    deleted={handleDetailPlayerDeleted}
+  />
+{/if}

@@ -31,6 +31,10 @@
     if (e.target === e.currentTarget) close();
   };
 
+  const handleCancel = () => {
+    close();
+  };
+
   const handleDeletePlayer = () => {
     deleted(player);
   };
@@ -46,7 +50,9 @@
   <dialog
     class="modal modal-open"
     style={`z-index:${zIndex}`}
+    open
     onclick={handleDialogClick}
+    oncancel={handleCancel}
   >
     <div class="modal-box space-y-2">
       <div class="flex items-center justify-between rounded-box bg-base-200 px-3 py-2">

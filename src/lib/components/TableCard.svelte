@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Table } from '$lib/types';
-  import DetailPlayerModal from './modals/DetailPlayerModal.svelte';
   import {
     PencilSimpleIcon,
     TrashIcon,
@@ -23,31 +22,9 @@
     onDeleteTable,
     onEditTable,
     onExpandTable,
-    onDeletePlayer
+    onDeletePlayer,
+    onOpenDetailPlayer
   } = $props();
-
-  let detailPlayerModalOpen = $state(false);
-  let detailPlayer: Player | null = $state(null);
-
-  function openDetailPlayer(player: Player) {
-    detailPlayer = player;
-    detailPlayerModalOpen = true;
-  }
-  function closeDetailPlayer() {
-    detailPlayerModalOpen = false;
-    detailPlayer = null;
-  }
-  async function handleSavePlayer(updated) {
-    if (table && updated?.id) {
-      table.players = table.players.map((p) => (p.id === updated.id ? updated : p));
-      onSavePlayer(table.id, updated);
-    }
-    // refresh detailPlayer if it was the one edited
-    if (detailPlayer && updated?.id) {
-      const refreshed = table?.players.find((p) => p.id === updated.id);
-      if (refreshed) detailPlayer = refreshed;
-    }
-  }
 
   const handleExpandTable = () => {
     onExpandTable(table);
@@ -65,15 +42,13 @@
     onAddPlayer(table);
   };
 
-  const handlePlayerDeleted = (event: any) => {
-    closeDetailPlayer();
-    onDeletePlayer(table.id, event.id, event.name);
+  const handleOpenDetailPlayer = (player: Player) => {
+    onOpenDetailPlayer(table.id, player);
   };
 </script>
 
 <article
   class="card card-border border border-base-300 bg-base-100 transition hover:shadow-lg"
-  style="z-index:{baseZIndex}"
 >
   <div class="card-body gap-3">
     <div class="flex items-center justify-between gap-2 min-w-0">
@@ -141,7 +116,7 @@
             class={`${player.isTeacher ? 'badge badge-accent' : playerBadge.className} gap-1 max-w-full break-words hover:badge-outline focus-visible:outline-none focus-visible:ring flex items-center`}
             title={player.isTeacher ? 'Spiegatore' : player.isBeginner ? 'Principiante' : 'Esperto'}
             aria-label={`Dettagli ${player.name}`}
-            onclick={() => openDetailPlayer(player)}
+            onclick={() => handleOpenDetailPlayer(player)}
           >
             <playerBadge.Icon size={14} weight="fill" aria-hidden="true" />
             <span class="inline-flex items-center gap-1">
@@ -160,16 +135,3 @@
     </div>
   </div>
 </article>
-
-{#if detailPlayerModalOpen && detailPlayer}
-  <DetailPlayerModal
-    player={detailPlayer}
-    open={detailPlayerModalOpen}
-    zIndex={baseZIndex + 1}
-    players={table.players}
-    tableId={table.id}
-    close={closeDetailPlayer}
-    saved={handleSavePlayer}
-    deleted={handlePlayerDeleted}
-  />
-{/if}

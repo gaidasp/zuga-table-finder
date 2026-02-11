@@ -52,11 +52,27 @@
       }
     };
   };
+
+  const handleDialogClick = (e: MouseEvent) => {
+    if (e.target === e.currentTarget) close();
+  };
+
+  const handleCancel = () => {
+    close();
+  };
   
 </script>
 
 {#if open}
-  <dialog class="modal modal-open" tabindex="-1" aria-modal="true" style={`z-index:${zIndex}`}>
+  <dialog 
+    class="modal modal-open" 
+    tabindex="-1" 
+    aria-modal="true" 
+    style={`z-index:${zIndex}`}
+    open
+    onclick={handleDialogClick}
+    oncancel={handleCancel}
+  >
     <div class="modal-box">
       <div class="flex items-center justify-between px-3 py-2">
         <h3 class="card-title">Modifica un giocatore</h3>
