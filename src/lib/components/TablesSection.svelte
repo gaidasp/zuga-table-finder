@@ -5,6 +5,7 @@
   let {
     tables = [],
     baseZIndex = 0,
+    focusedTableId = null,
     onAddPlayer,
     onSavePlayer,
     onDeleteTable,
@@ -13,6 +14,20 @@
     onDeletePlayer,
     onOpenDetailPlayer
   } = $props();
+
+  const sortedTables = $derived([...tables].sort((a, b) => b.players.length - a.players.length));
+
+  $effect(() => {
+    if (focusedTableId && tables.length > 3) {
+      const index = sortedTables.findIndex(t => t.id === focusedTableId);
+      if (index !== -1) {
+        setTimeout(() => {
+          const element = document.getElementById(`table-${index}`);
+          element?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }, 100);
+      }
+    }
+  });
 </script>
 
 <section aria-labelledby="tables-heading">
@@ -41,9 +56,9 @@
             <p>Nessun tavolo aperto: aprine uno e fai partire la serata!</p>
           </div>
         </div>
-      {:else}
+      {:else if tables.length <= 3}
         <div class="grid gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-          {#each [...tables].sort((a, b) => b.players.length - a.players.length) as table (table.id)}
+          {#each sortedTables as table (table.id)}
             <TableCard
               {baseZIndex}
               {table}
@@ -55,6 +70,30 @@
               {onDeletePlayer}
               {onOpenDetailPlayer}
             />
+          {/each}
+        </div>
+      {:else}
+        <div class="carousel carousel-center w-full space-x-2 p-4">
+          {#each sortedTables as table, index (table.id)}
+            <div id="table-{index}" class="carousel-item w-full sm:w-1/2 lg:w-1/3">
+              <TableCard
+                {baseZIndex}
+                {table}
+                {onAddPlayer}
+                {onSavePlayer}
+                {onDeleteTable}
+                {onEditTable}
+                {onExpandTable}
+                {onDeletePlayer}
+                {onOpenDetailPlayer}
+              />
+            </div>
+          {/each}
+        </div>
+        <div class="flex flex-wrap justify-center w-full py-2 gap-2">
+          {#each sortedTables as table, index (table.id)}
+            {@const weightColor = table.weight === 'Party' ? 'text-warning' : table.weight === 'Leggero (max 45 min)' ? 'text-info' : table.weight === 'Medio (1-2h)' ? 'text-success' : 'text-error'}
+            <a href="#table-{index}" class="btn btn-xs {weightColor}" aria-label="Vai al tavolo {index + 1}">{index + 1}</a>
           {/each}
         </div>
       {/if}

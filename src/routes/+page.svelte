@@ -73,8 +73,8 @@
   );
 </script>
 
-<main class="w-full min-h-screen space-y-4 sm:space-y-8 px-2 py-4 sm:px-4 sm:py-8 overflow-x-hidden">
-  <header class="border-b border-base-300 bg-base-200/60">
+<main class="w-full min-h-screen bg-base-200 space-y-4 sm:space-y-8 px-2 py-4 sm:px-4 sm:py-8 overflow-x-hidden">
+  <header class="border-b border-base-300 bg-base-200">
 
     <div class="flex w-full flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
       <div class="flex items-center gap-4">
@@ -108,6 +108,7 @@
     <TablesSection
       tables={pageData.tables}
       baseZIndex={stateManager.baseZIndex}
+      focusedTableId={stateManager.focusedTableId}
       onAddPlayer={stateManager.addPlayerModal.open}
       onSavePlayer={(tableId, player) => actions.handleSavePlayer(tableId, player, stateManager.nightDate)}
       onDeleteTable={stateManager.deleteTableModal.open}

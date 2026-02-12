@@ -178,9 +178,14 @@ export class PageStateManager {
   // Shared state
   baseZIndex = $state(0);
   nightDate = $state('');
+  focusedTableId = $state<string | null>(null);
 
   constructor(initialNightDate: string) {
     this.nightDate = initialNightDate;
+  }
+
+  setFocusedTable(tableId: string | null) {
+    this.focusedTableId = tableId;
   }
 
   updateNightDate(newDate: string) {

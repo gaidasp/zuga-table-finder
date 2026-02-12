@@ -10,12 +10,14 @@ export class ActionsManager {
   // Table Actions
   handleTableCreated = async (table: Table | null, nightDate: string) => {
     if (table) {
+      this.state.setFocusedTable(table.id);
       await this.reloadData(nightDate);
     }
     this.state.createTableModal.close();
   };
 
   handleTableSaved = async (table: Table, nightDate: string) => {
+    this.state.setFocusedTable(table.id);
     await this.reloadData(nightDate);
     this.state.editTableModal.close();
   };
@@ -28,10 +30,12 @@ export class ActionsManager {
   // Player Actions
   handleSavePlayer = async (tableId: string, updated: Player, nightDate: string) => {
     if (!updated?.id) return;
+    this.state.setFocusedTable(tableId);
     await this.reloadData(nightDate);
   };
 
   handlePlayerAdded = async (updatedTable: Table, nightDate: string) => {
+    this.state.setFocusedTable(updatedTable.id);
     await this.reloadData(nightDate);
     this.state.addPlayerModal.close();
   };

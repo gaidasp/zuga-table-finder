@@ -4,40 +4,42 @@
 @plugin "daisyui";
 
 
+
 @plugin "daisyui/theme" {
   name: "zuga-theme";
-  default: true;
+  default: false;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(28% 0.091 267.935);
-  --color-base-200: oklch(42% 0.199 265.638);
-  --color-base-300: oklch(62% 0.214 259.815);
-  --color-base-content: oklch(97% 0.014 254.604);
-  --color-primary: oklch(65% 0.241 354.308);
-  --color-primary-content: oklch(97% 0.014 343.198);
-  --color-secondary: oklch(90% 0.182 98.111);
-  --color-secondary-content: oklch(28% 0.066 53.813);
-  --color-accent: oklch(55% 0.288 302.321);
-  --color-accent-content: oklch(97% 0.014 308.299);
-  --color-neutral: oklch(23.04% 0.065 269.31);
-  --color-neutral-content: oklch(97% 0.014 254.604);
-  --color-info: oklch(72.06% 0.191 231.6);
-  --color-info-content: oklch(29% 0.066 243.157);
-  --color-success: oklch(79% 0.209 151.711);
-  --color-success-content: oklch(0% 0 0);
-  --color-warning: oklch(84.71% 0.199 83.87);
-  --color-warning-content: oklch(28% 0.066 53.813);
+  --color-base-100: oklch(98% 0.019 200.873);
+  --color-base-200: oklch(95% 0.045 203.388);
+  --color-base-300: oklch(91% 0.08 205.041);
+  --color-base-content: oklch(39% 0.07 227.392);
+  --color-primary: oklch(54% 0.245 262.881);
+  --color-primary-content: oklch(97% 0.014 254.604);
+  --color-secondary: oklch(62% 0.194 149.214);
+  --color-secondary-content: oklch(98% 0.018 155.826);
+  --color-accent: oklch(60% 0.118 184.704);
+  --color-accent-content: oklch(98% 0.014 180.72);
+  --color-neutral: oklch(60% 0.126 221.723);
+  --color-neutral-content: oklch(98% 0.019 200.873);
+  --color-info: oklch(54% 0.245 262.881);
+  --color-info-content: oklch(97% 0.014 254.604);
+  --color-success: oklch(60% 0.118 184.704);
+  --color-success-content: oklch(98% 0.014 180.72);
+  --color-warning: oklch(64% 0.222 41.116);
+  --color-warning-content: oklch(98% 0.016 73.684);
   --color-error: oklch(58% 0.253 17.585);
   --color-error-content: oklch(96% 0.015 12.422);
   --radius-selector: 2rem;
   --radius-field: 2rem;
   --radius-box: 2rem;
-  --size-selector: 0.28125rem;
+  --size-selector: 0.25rem;
   --size-field: 0.25rem;
-  --border: 1.5px;
-  --depth: 0;
+  --border: 2px;
+  --depth: 1;
   --noise: 1;
 }
+
 
 
 
