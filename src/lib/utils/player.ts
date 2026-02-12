@@ -1,9 +1,10 @@
 import { FireIcon, LeafIcon, GraduationCapIcon } from 'phosphor-svelte';
-import type { ComponentType } from 'svelte';
+import type { Component } from 'svelte';
+import type { IconComponentProps } from 'phosphor-svelte/lib/types';
 
 export interface PlayerBadgeStyle {
   className: string;
-  Icon: ComponentType;
+  Icon: Component<IconComponentProps>;
   label: string;
 }
 

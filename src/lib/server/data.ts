@@ -38,7 +38,7 @@ export const db = async () => {
 };
 
 import { randomUUID } from 'crypto';
-import type { SparePlayer, Player, GameWeight } from '$lib/types';
+import type { SparePlayer, Player, GameWeight, Table } from '$lib/types';
 
 type TableDoc = Omit<Table, 'id'> & { _id: string; kind: 'table' };
 type SparePlayerDoc = Omit<SparePlayer, 'id'> & { _id: string; kind: 'spare' };
