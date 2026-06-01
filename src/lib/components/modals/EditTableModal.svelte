@@ -1,7 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import type { Table, GameWeight } from '$lib/types';
+  import type { Table, GameWeight, BGGGame } from '$lib/types';
   import { ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, XIcon, TrashIcon } from 'phosphor-svelte';
+  import GameSearchInput from '$lib/components/GameSearchInput.svelte';
 
 
   let {
@@ -14,6 +15,7 @@
     defaultDescription = $bindable(),   
     defaultSeats =  $bindable(),
     defaultWeight =  $bindable(),
+    defaultBggGame = $bindable<BGGGame | null>(null),
     close,
     saved,
     onDelete
@@ -74,10 +76,7 @@
             </div>
           {/if}
           <input type="hidden" name="tableId" value={tableId ?? ''} />
-          <div class="form-control flex flex-col gap-1">
-            <label class="label" for="edit-table-title">Titolo del tavolo</label>
-            <input id="edit-table-title " name="title" required maxlength="14" class="input" bind:value={defaultTitle} />
-          </div>
+          <GameSearchInput bind:title={defaultTitle} bind:bggGame={defaultBggGame} />
           <div class="form-control flex flex-col gap-1">
             <label class="label" for="edit-table-seats">Posti disponibili (1-12)</label>
             <input

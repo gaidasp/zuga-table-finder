@@ -1,4 +1,4 @@
-import type { Player, Table, GameWeight, SparePlayer } from '$lib/types';
+import type { Player, Table, GameWeight, SparePlayer, BGGGame } from '$lib/types';
 
 // Individual modal state classes following OOP principles
 class FabMenuState {
@@ -49,6 +49,7 @@ class EditTableModalState {
   defaultDescription = $state('');
   defaultSeats: number | string = $state(4);
   defaultWeight: GameWeight | '' = $state('');
+  defaultBggGame = $state<BGGGame | null>(null);
 
   open = (table: Table, currentZIndex: number) => {
     this.table = table;
@@ -56,6 +57,7 @@ class EditTableModalState {
     this.defaultDescription = table.description ?? '';
     this.defaultSeats = table.seats;
     this.defaultWeight = table.weight;
+    this.defaultBggGame = table.bggGame ?? null;
     this.zIndex = currentZIndex + 1;
     this.isOpen = true;
   };

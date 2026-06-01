@@ -1,7 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { Confetti, Feather, PuzzlePiece, Skull, X } from 'phosphor-svelte';
-  import type { GameWeight, Table } from '$lib/types';
+  import type { GameWeight, Table, BGGGame } from '$lib/types';
+  import GameSearchInput from '$lib/components/GameSearchInput.svelte';
 
   let {
     open = false,
@@ -14,6 +15,8 @@
   } = $props();
   let defaultWeight: GameWeight = $state('Medio (1-2h)');
   let errorMsg = $state('');
+  let title = $state('');
+  let bggGame = $state<BGGGame | null>(null);
 
   $effect(() => {
     if (open) errorMsg = '';
@@ -74,17 +77,7 @@
           {/if}
           <input name={honeypotName} hidden tabindex="-1" aria-hidden="true" />
           <input type="hidden" name="nightDate" value={nightDate} />
-          <div class="form-control flex flex-col gap-1">
-            <label class="label" for="create-table-title">Titolo del tavolo</label>
-            <input
-              id="create-table-title"
-              name="title"
-              required
-              maxlength="14"
-              placeholder="Catan, Azul, party game..."
-              class="input"
-            />
-          </div>
+          <GameSearchInput bind:title bind:bggGame />
           <div class="form-control flex flex-col gap-1">
             <label class="label" for="create-table-seats">Posti disponibili (1-30)</label>
             <input

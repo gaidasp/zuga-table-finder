@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import { deserialize } from '$app/forms';
+  import type { Player, SparePlayer, Table } from '$lib/types';
   import TablesSection from '$lib/components/TablesSection.svelte';
   import PlayerMatchingSection from '$lib/components/PlayerMatchingSection.svelte';
   import FabMenu from '$lib/components/FabMenu.svelte';
@@ -58,19 +59,19 @@
   // Derived states
   const selectedTableDetails = $derived(
     stateManager.detailTableModal.tableId
-      ? pageData.tables.find((table) => table.id === stateManager.detailTableModal.tableId) ?? null
+      ? pageData.tables.find((table: Table) => table.id === stateManager.detailTableModal.tableId) ?? null
       : null
   );
 
   const detailPlayerTable = $derived(
     stateManager.detailPlayerModal.data
-      ? pageData.tables.find((table) => table.id === stateManager.detailPlayerModal.data!.tableId) ?? null
+      ? pageData.tables.find((table: Table) => table.id === stateManager.detailPlayerModal.data!.tableId) ?? null
       : null
   );
 
   const editPlayerTable = $derived(
     stateManager.editPlayerModal.data
-      ? pageData.tables.find((table) => table.id === stateManager.editPlayerModal.data!.tableId) ?? null
+      ? pageData.tables.find((table: Table) => table.id === stateManager.editPlayerModal.data!.tableId) ?? null
       : null
   );
 </script>
@@ -98,7 +99,7 @@
         zIndex={stateManager.baseZIndex + 1}
         nightDate={stateManager.nightDate}
         {honeypotName}
-        selected={(date) => {
+        selected={(date: string) => {
           stateManager.updateNightDate(date);
           void actions.handleNightDateSelected(date);
         }}
@@ -106,155 +107,171 @@
     </div>
   </header>
 
-  <div class="grid gap-3 sm:gap-6 grid-cols-1">
-    <TablesSection
-      tables={pageData.tables}
-      baseZIndex={stateManager.baseZIndex}
-      focusedTableId={stateManager.focusedTableId}
-      onAddPlayer={stateManager.addPlayerModal.open}
-      onSavePlayer={(tableId, player) => actions.handleSavePlayer(tableId, player, stateManager.nightDate)}
-      onDeleteTable={stateManager.deleteTableModal.open}
-      onEditTable={stateManager.editTableModal.open}
-      onExpandTable={stateManager.detailTableModal.open}
-      onDeletePlayer={stateManager.deletePlayerModal.open}
-      onOpenDetailPlayer={stateManager.editPlayerModal.open}
-    />
-    <PlayerMatchingSection
-      weights={pageData.weights}
-      sparePlayers={pageData.sparePlayers}
-      baseZIndex={stateManager.baseZIndex}
-      {honeypotName}
-      nightDate={stateManager.nightDate}
-      reload={() => reloadData(stateManager.nightDate)}
-    />
-  </div>
+  {#if pageData.databaseError}
+    <div class="alert alert-error shadow-sm">
+      <span>{pageData.databaseError}</span>
+    </div>
+
+    <section class="card bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title">Modalita offline</h2>
+        <p>I dati dei tavoli non sono disponibili finche la connessione al database non viene ripristinata.</p>
+      </div>
+    </section>
+  {:else}
+    <div class="grid gap-3 sm:gap-6 grid-cols-1">
+      <TablesSection
+        tables={pageData.tables}
+        baseZIndex={stateManager.baseZIndex}
+        focusedTableId={stateManager.focusedTableId}
+        onAddPlayer={stateManager.addPlayerModal.open}
+        onSavePlayer={(tableId: string, player: Player) => actions.handleSavePlayer(tableId, player, stateManager.nightDate)}
+        onDeleteTable={stateManager.deleteTableModal.open}
+        onEditTable={stateManager.editTableModal.open}
+        onExpandTable={stateManager.detailTableModal.open}
+        onDeletePlayer={stateManager.deletePlayerModal.open}
+        onOpenDetailPlayer={stateManager.editPlayerModal.open}
+      />
+      <PlayerMatchingSection
+        weights={pageData.weights}
+        sparePlayers={pageData.sparePlayers}
+        baseZIndex={stateManager.baseZIndex}
+        {honeypotName}
+        nightDate={stateManager.nightDate}
+        reload={() => reloadData(stateManager.nightDate)}
+      />
+    </div>
+  {/if}
 </main>
 
-<FabMenu
-  open={stateManager.fabMenu.isOpen}
-  zIndex={stateManager.baseZIndex + 1}
-  onToggle={stateManager.fabMenu.toggle}
-  onCreate={() => {
-    stateManager.fabMenu.close();
-    stateManager.createTableModal.open();
-  }}
-  onSpare={() => {
-    stateManager.fabMenu.close();
-    stateManager.addSparePlayerModal.open();
-  }}
-/>
-
-<AddSparePlayerModal
-  open={stateManager.addSparePlayerModal.isOpen}
-  zIndex={stateManager.baseZIndex + 2}
-  {honeypotName}
-  weights={pageData.weights}
-  nightDate={stateManager.nightDate}
-  close={stateManager.addSparePlayerModal.close}
-  added={(sparePlayer) => actions.handleSpareAdded(sparePlayer, stateManager.nightDate)}
-/>
-
-<!-- TABLE MODALS -->
-
-<CreateTableModal
-  open={stateManager.createTableModal.isOpen}
-  zIndex={stateManager.baseZIndex + 2}
-  nightDate={stateManager.nightDate}
-  {honeypotName}
-  weights={pageData.weights}
-  close={stateManager.createTableModal.close}
-  created={(table) => actions.handleTableCreated(table, stateManager.nightDate)}
-/>
-
-<EditTableModal
-  open={stateManager.editTableModal.isOpen}
-  zIndex={stateManager.editTableModal.zIndex + 2}
-  {honeypotName}
-  weights={pageData.weights}
-  tableId={stateManager.editTableModal.table?.id ?? null}
-  bind:defaultTitle={stateManager.editTableModal.defaultTitle}
-  bind:defaultDescription={stateManager.editTableModal.defaultDescription}
-  bind:defaultSeats={stateManager.editTableModal.defaultSeats}
-  bind:defaultWeight={stateManager.editTableModal.defaultWeight}
-  close={stateManager.editTableModal.close}
-  saved={(table) => actions.handleTableSaved(table, stateManager.nightDate)}
-  onDelete={() => {
-    if (stateManager.editTableModal.table) {
-      stateManager.deleteTableModal.open(stateManager.editTableModal.table, stateManager.editTableModal.zIndex + 2);
-    }
-  }}
-/>
-
-<DeleteTableModal
-  open={stateManager.deleteTableModal.isOpen}
-  zIndex={stateManager.deleteTableModal.zIndex + 2}
-  {honeypotName}
-  table={stateManager.deleteTableModal.table}
-  close={stateManager.deleteTableModal.close}
-  deleted={(tableId) => actions.handleTableDeleted(tableId, stateManager.nightDate)}
-/>
-
-<DetailTableModal
-  open={!!selectedTableDetails}
-  zIndex={stateManager.baseZIndex + 2}
-  table={selectedTableDetails}
-  close={stateManager.detailTableModal.close}
-  onAddPlayer={stateManager.addPlayerModal.open}
-  onDeleteTable={stateManager.deleteTableModal.open}
-  onEditTable={stateManager.editTableModal.open}
-  onDeletePlayer={stateManager.deletePlayerModal.open}
-  onOpenDetailPlayer={stateManager.editPlayerModal.open}
-/>
-
-<!-- PLAYER MODALS -->
-
-<AddPlayerModal
-  open={stateManager.addPlayerModal.isOpen}
-  zIndex={stateManager.baseZIndex + 2}
-  {honeypotName}
-  table={stateManager.addPlayerModal.table}
-  close={stateManager.addPlayerModal.close}
-  added={(table) => actions.handlePlayerAdded(table, stateManager.nightDate)}
-/>
-
-<DeletePlayerModal
-  open={stateManager.deletePlayerModal.isOpen}
-  zIndex={stateManager.baseZIndex + 2}
-  {honeypotName}
-  player={stateManager.deletePlayerModal.player}
-  close={stateManager.deletePlayerModal.close}
-  deleted={(table) => actions.handlePlayerDeleted(table, stateManager.nightDate)}
-/>
-
-{#if stateManager.detailPlayerModal.data && detailPlayerTable}
-  <DetailPlayerModal
-    player={stateManager.detailPlayerModal.data.player}
-    open={true}
-    zIndex={stateManager.baseZIndex + 2}
-    players={detailPlayerTable.players}
-    tableId={stateManager.detailPlayerModal.data.tableId}
-    close={stateManager.detailPlayerModal.close}
-    saved={(player) => actions.handleSavePlayer(stateManager.detailPlayerModal.data!.tableId, player, stateManager.nightDate)}
-    deleted={actions.handleDetailPlayerDeleted}
+{#if !pageData.databaseError}
+  <FabMenu
+    open={stateManager.fabMenu.isOpen}
+    zIndex={stateManager.baseZIndex + 1}
+    onToggle={stateManager.fabMenu.toggle}
+    onCreate={() => {
+      stateManager.fabMenu.close();
+      stateManager.createTableModal.open();
+    }}
+    onSpare={() => {
+      stateManager.fabMenu.close();
+      stateManager.addSparePlayerModal.open();
+    }}
   />
-{/if}
 
-{#if stateManager.editPlayerModal.data && editPlayerTable}
-  <EditPlayerModal
-    bind:player={stateManager.editPlayerModal.data.player}
-    open={true}
+  <AddSparePlayerModal
+    open={stateManager.addSparePlayerModal.isOpen}
     zIndex={stateManager.baseZIndex + 2}
-    players={editPlayerTable.players}
-    tableId={stateManager.editPlayerModal.data.tableId}
-    honeypotName={honeypotName}
-    close={stateManager.editPlayerModal.close}
-    saved={(player) => actions.handleSavePlayer(stateManager.editPlayerModal.data!.tableId, player, stateManager.nightDate)}
+    {honeypotName}
+    weights={pageData.weights}
+    nightDate={stateManager.nightDate}
+    close={stateManager.addSparePlayerModal.close}
+    added={(sparePlayer: SparePlayer) => actions.handleSpareAdded(sparePlayer, stateManager.nightDate)}
+  />
+
+  <!-- TABLE MODALS -->
+
+  <CreateTableModal
+    open={stateManager.createTableModal.isOpen}
+    zIndex={stateManager.baseZIndex + 2}
+    nightDate={stateManager.nightDate}
+    {honeypotName}
+    weights={pageData.weights}
+    close={stateManager.createTableModal.close}
+    created={(table: Table) => actions.handleTableCreated(table, stateManager.nightDate)}
+  />
+
+  <EditTableModal
+    open={stateManager.editTableModal.isOpen}
+    zIndex={stateManager.editTableModal.zIndex + 2}
+    {honeypotName}
+    weights={pageData.weights}
+    tableId={stateManager.editTableModal.table?.id ?? null}
+    bind:defaultTitle={stateManager.editTableModal.defaultTitle}
+    bind:defaultDescription={stateManager.editTableModal.defaultDescription}
+    bind:defaultSeats={stateManager.editTableModal.defaultSeats}
+    bind:defaultWeight={stateManager.editTableModal.defaultWeight}
+    bind:defaultBggGame={stateManager.editTableModal.defaultBggGame}
+    close={stateManager.editTableModal.close}
+    saved={(table: Table) => actions.handleTableSaved(table, stateManager.nightDate)}
     onDelete={() => {
-      if (stateManager.editPlayerModal.data) {
-        const { tableId, player } = stateManager.editPlayerModal.data;
-        stateManager.editPlayerModal.close();
-        stateManager.deletePlayerModal.open(tableId, player.id, player.name);
+      if (stateManager.editTableModal.table) {
+        stateManager.deleteTableModal.open(stateManager.editTableModal.table, stateManager.editTableModal.zIndex + 2);
       }
     }}
   />
+
+  <DeleteTableModal
+    open={stateManager.deleteTableModal.isOpen}
+    zIndex={stateManager.deleteTableModal.zIndex + 2}
+    {honeypotName}
+    table={stateManager.deleteTableModal.table}
+    close={stateManager.deleteTableModal.close}
+    deleted={(tableId: string) => actions.handleTableDeleted(tableId, stateManager.nightDate)}
+  />
+
+  <DetailTableModal
+    open={!!selectedTableDetails}
+    zIndex={stateManager.baseZIndex + 2}
+    table={selectedTableDetails}
+    close={stateManager.detailTableModal.close}
+    onAddPlayer={stateManager.addPlayerModal.open}
+    onDeleteTable={stateManager.deleteTableModal.open}
+    onEditTable={stateManager.editTableModal.open}
+    onDeletePlayer={stateManager.deletePlayerModal.open}
+    onOpenDetailPlayer={stateManager.editPlayerModal.open}
+  />
+
+  <!-- PLAYER MODALS -->
+
+  <AddPlayerModal
+    open={stateManager.addPlayerModal.isOpen}
+    zIndex={stateManager.baseZIndex + 2}
+    {honeypotName}
+    table={stateManager.addPlayerModal.table}
+    close={stateManager.addPlayerModal.close}
+    added={(table: Table) => actions.handlePlayerAdded(table, stateManager.nightDate)}
+  />
+
+  <DeletePlayerModal
+    open={stateManager.deletePlayerModal.isOpen}
+    zIndex={stateManager.baseZIndex + 2}
+    {honeypotName}
+    player={stateManager.deletePlayerModal.player}
+    close={stateManager.deletePlayerModal.close}
+    deleted={(table: Table) => actions.handlePlayerDeleted(table, stateManager.nightDate)}
+  />
+
+  {#if stateManager.detailPlayerModal.data && detailPlayerTable}
+    <DetailPlayerModal
+      player={stateManager.detailPlayerModal.data.player}
+      open={true}
+      zIndex={stateManager.baseZIndex + 2}
+      players={detailPlayerTable.players}
+      tableId={stateManager.detailPlayerModal.data.tableId}
+      close={stateManager.detailPlayerModal.close}
+      saved={(player: Player) => actions.handleSavePlayer(stateManager.detailPlayerModal.data!.tableId, player, stateManager.nightDate)}
+      deleted={actions.handleDetailPlayerDeleted}
+    />
+  {/if}
+
+  {#if stateManager.editPlayerModal.data && editPlayerTable}
+    <EditPlayerModal
+      bind:player={stateManager.editPlayerModal.data.player}
+      open={true}
+      zIndex={stateManager.baseZIndex + 2}
+      players={editPlayerTable.players}
+      tableId={stateManager.editPlayerModal.data.tableId}
+      honeypotName={honeypotName}
+      close={stateManager.editPlayerModal.close}
+      saved={(player: Player) => actions.handleSavePlayer(stateManager.editPlayerModal.data!.tableId, player, stateManager.nightDate)}
+      onDelete={() => {
+        if (stateManager.editPlayerModal.data) {
+          const { tableId, player } = stateManager.editPlayerModal.data;
+          stateManager.editPlayerModal.close();
+          stateManager.deletePlayerModal.open(tableId, player.id, player.name);
+        }
+      }}
+    />
+  {/if}
 {/if}

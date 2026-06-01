@@ -102,6 +102,21 @@
             </span>
           </div>
 
+          {#if table.bggGame}
+            <div class="flex items-center justify-center gap-2 text-xs">
+              <span class="font-semibold">Gioco:</span>
+              <a
+                href={table.bggGame.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link link-primary truncate"
+                style="max-width: 18ch;"
+              >
+                {table.bggGame.name}
+              </a>
+            </div>
+          {/if}
+
           <div class="divider my-0"></div>
           {#if table.players.length === 0}
             <div>

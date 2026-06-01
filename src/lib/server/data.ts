@@ -38,7 +38,7 @@ export const db = async () => {
 };
 
 import { randomUUID } from 'crypto';
-import type { SparePlayer, Player, GameWeight, Table } from '$lib/types';
+import type { SparePlayer, Player, GameWeight, Table, BGGGame } from '$lib/types';
 
 type TableDoc = Omit<Table, 'id'> & { _id: string; kind: 'table' };
 type SparePlayerDoc = Omit<SparePlayer, 'id'> & { _id: string; kind: 'spare' };
@@ -56,7 +56,8 @@ const mapTable = (doc: TableDoc): Table => ({
   seats: doc.seats,
   players: doc.players,
   nightDate: doc.nightDate ?? new Date(doc.createdAt).toISOString().slice(0, 10),
-  createdAt: doc.createdAt
+  createdAt: doc.createdAt,
+  bggGame: doc.bggGame ?? null
 });
 
 const mapSparePlayer = (doc: SparePlayerDoc): SparePlayer => ({
@@ -84,6 +85,7 @@ export async function createTable(input: {
   seats: number;
   weight: GameWeight;
   nightDate?: string;
+  bggGame?: BGGGame | null;
 }): Promise<Table> {
   const createdAt = Date.now();
   const nightDate = input.nightDate ?? new Date(createdAt).toISOString().slice(0, 10);
@@ -96,7 +98,8 @@ export async function createTable(input: {
     seats: input.seats,
     players: [],
     nightDate,
-    createdAt
+    createdAt,
+    bggGame: input.bggGame ?? null
   };
   await (await zugaCollection()).insertOne(table);
   return mapTable(table);
@@ -104,19 +107,23 @@ export async function createTable(input: {
 
 export async function updateTable(
   tableId: string,
-  input: { title: string; description: string; seats: number; weight: GameWeight }
+  input: { title: string; description: string; seats: number; weight: GameWeight; bggGame?: BGGGame | null }
 ): Promise<Table | undefined> {
   const collection = await zugaCollection();
+  const updateFields: any = {
+    title: input.title,
+    description: input.description,
+    seats: Number.isFinite(input.seats) ? Math.min(Math.max(1, input.seats), 30) : 4,
+    weight: input.weight
+  };
+  
+  if (input.bggGame !== undefined) {
+    updateFields.bggGame = input.bggGame;
+  }
+  
   const result = await collection.findOneAndUpdate(
     { _id: tableId, kind: 'table' },
-    {
-      $set: {
-        title: input.title,
-        description: input.description,
-        seats: Number.isFinite(input.seats) ? Math.min(Math.max(1, input.seats), 30) : 4,
-        weight: input.weight
-      }
-    },
+    { $set: updateFields },
     { returnDocument: 'after' }
   );
   const updatedDoc = result && (result as any).value ? (result as any).value : result;

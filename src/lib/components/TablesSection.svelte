@@ -18,6 +18,13 @@
   const sortedTables = $derived([...tables].sort((a, b) => b.players.length - a.players.length));
   const carouselSortedTables = $derived([...tables].sort((a, b) => a.createdAt - b.createdAt));
 
+  function scrollToIndex(index: number) {
+    requestAnimationFrame(() => {
+      const element = document.getElementById(`table-${index}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    });
+  }
+
   $effect(() => {
     if (focusedTableId && tables.length > 3) {
       const index = carouselSortedTables.findIndex(t => t.id === focusedTableId);
@@ -25,8 +32,7 @@
         // Double RAF to ensure DOM is fully updated after data reload
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            const element = document.getElementById(`table-${index}`);
-            element?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            scrollToIndex(index);
           });
         });
       }
@@ -97,7 +103,7 @@
         <div class="flex flex-wrap justify-center w-full py-2 gap-2">
           {#each carouselSortedTables as table, index (table.id)}
             {@const weightColor = table.weight === 'Party' ? 'text-warning' : table.weight === 'Leggero (max 45 min)' ? 'text-info' : table.weight === 'Medio (1-2h)' ? 'text-success' : 'text-error'}
-            <a href="#table-{index}" class="btn btn-xs {weightColor}" aria-label="Vai al tavolo {index + 1}">{index + 1}</a>
+            <a href="#table-{index}" onclick={e => {e.preventDefault(); scrollToIndex(index);}} class="btn btn-xs {weightColor}" aria-label="Vai al tavolo {index + 1}">{index + 1}</a>
           {/each}
         </div>
       {/if}
