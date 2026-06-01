@@ -1,0 +1,24 @@
+name: Run build and deploy on AWS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Configure AWS credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          role-to-assume: ${{ vars.AWS_ASSUMED_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Start build
+        id: run
+        run: aws lambda invoke --function-name ${{ vars.AWS_LAMBDA_FUNCTION_NAME }} --payload '{}' response.json
