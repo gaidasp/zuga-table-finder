@@ -2,8 +2,6 @@ name: Run build and deploy on AWS
 
 on:
   push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
