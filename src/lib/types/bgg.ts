@@ -4,4 +4,8 @@ export type BGGGame = {
   yearPublished?: string;
   image?: string;
   url?: string;
+  description?: string;
+  minPlayers?: number;
+  maxPlayers?: number;
+  playingTime?: number;
 };

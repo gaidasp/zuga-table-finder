@@ -21,9 +21,59 @@
     onDelete
   } = $props() 
 
+  const clampInt = (value: number | undefined, min: number, max: number, fallback: number) => {
+    if (!Number.isFinite(value)) return fallback;
+    return Math.min(max, Math.max(min, Math.round(value as number)));
+  };
+
+  const getWeightFromBgg = (game: BGGGame): GameWeight => {
+    const time = game.playingTime ?? 0;
+    const maxPlayers = game.maxPlayers ?? 0;
+
+    if (time > 0 && time <= 45) {
+      return maxPlayers >= 6 ? 'Party' : 'Leggero (max 45 min)';
+    }
+
+    if (time > 45 && time <= 120) {
+      return maxPlayers >= 7 ? 'Party' : 'Medio (1-2h)';
+    }
+
+    if (time > 120) return 'Estremo (>2h)';
+    if (maxPlayers >= 7) return 'Party';
+    if (maxPlayers >= 5) return 'Leggero (max 45 min)';
+    return 'Medio (1-2h)';
+  };
+
+  const toDefaultDescription = (game: BGGGame) => (game.description ?? '').trim();
+
   let errorMsg = $state('');
+  let lastAutofilledBggId = $state<string | null>(null);
+
   $effect(() => {
     if (open) errorMsg = '';
+    if (open) {
+      // Snapshot current table game at open so we don't overwrite existing values immediately.
+      lastAutofilledBggId = defaultBggGame?.id ?? null;
+    } else {
+      lastAutofilledBggId = null;
+    }
+  });
+
+  $effect(() => {
+    if (!open) return;
+
+    const selectedBggId = defaultBggGame?.id ?? null;
+    if (!selectedBggId) {
+      lastAutofilledBggId = null;
+      return;
+    }
+
+    if (selectedBggId === lastAutofilledBggId) return;
+
+    defaultWeight = getWeightFromBgg(defaultBggGame as BGGGame);
+    defaultDescription = toDefaultDescription(defaultBggGame as BGGGame);
+    defaultSeats = clampInt(defaultBggGame?.maxPlayers, 1, 30, 4);
+    lastAutofilledBggId = selectedBggId;
   });
 
   const handleDeleteTable = () => {
@@ -78,7 +128,7 @@
           <input type="hidden" name="tableId" value={tableId ?? ''} />
           <GameSearchInput bind:title={defaultTitle} bind:bggGame={defaultBggGame} />
           <div class="form-control flex flex-col gap-1">
-            <label class="label" for="edit-table-seats">Posti disponibili (1-12)</label>
+            <label class="label" for="edit-table-seats">Posti disponibili (1-30)</label>
             <input
               id="edit-table-seats"
               name="seats"
@@ -88,6 +138,7 @@
               class="input"
               bind:value={defaultSeats} />
           </div>
+
           <div class="form-control flex flex-col gap-1">
             <label class="label" for="edit-table-weight">Peso</label>
             <select id="edit-table-weight" name="weight" class="select" required bind:value={defaultWeight}>

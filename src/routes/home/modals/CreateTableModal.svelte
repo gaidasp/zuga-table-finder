@@ -13,13 +13,68 @@
     close,
     created
   } = $props();
+
+  const DEFAULT_SEATS = 4;
+  const DEFAULT_WEIGHT: GameWeight = 'Medio (1-2h)';
+
+  const clampInt = (value: number | undefined, min: number, max: number, fallback: number) => {
+    if (!Number.isFinite(value)) return fallback;
+    return Math.min(max, Math.max(min, Math.round(value as number)));
+  };
+
+  const getWeightFromBgg = (game: BGGGame): GameWeight => {
+    const time = game.playingTime ?? 0;
+    const maxPlayers = game.maxPlayers ?? 0;
+
+    if (time > 0 && time <= 45) {
+      return maxPlayers >= 6 ? 'Party' : 'Leggero (max 45 min)';
+    }
+
+    if (time > 45 && time <= 120) {
+      return maxPlayers >= 7 ? 'Party' : 'Medio (1-2h)';
+    }
+
+    if (time > 120) {
+      return 'Estremo (>2h)';
+    }
+
+    if (maxPlayers >= 7) return 'Party';
+    if (maxPlayers >= 5) return 'Leggero (max 45 min)';
+    return 'Medio (1-2h)';
+  };
+
+  const toDefaultDescription = (game: BGGGame) => (game.description ?? '').trim();
+
   let defaultWeight: GameWeight = $state('Medio (1-2h)');
   let errorMsg = $state('');
   let title = $state('');
+  let defaultDescription = $state('');
+  let defaultSeats = $state<number | string>(DEFAULT_SEATS);
   let bggGame = $state<BGGGame | null>(null);
+  let lastAutofilledBggId = $state<string | null>(null);
 
   $effect(() => {
     if (open) errorMsg = '';
+  });
+
+  $effect(() => {
+    if (!open) return;
+    if (!bggGame) {
+      if (lastAutofilledBggId !== null) {
+        defaultWeight = DEFAULT_WEIGHT;
+        defaultDescription = '';
+        defaultSeats = DEFAULT_SEATS;
+        lastAutofilledBggId = null;
+      }
+      return;
+    }
+
+    if (lastAutofilledBggId === bggGame.id) return;
+
+    defaultWeight = getWeightFromBgg(bggGame);
+    defaultDescription = toDefaultDescription(bggGame);
+    defaultSeats = clampInt(bggGame.maxPlayers, 1, 30, DEFAULT_SEATS);
+    lastAutofilledBggId = bggGame.id;
   });
 
   const enhanceHandler = () => {
@@ -86,10 +141,11 @@
               type="number"
               min="1"
               max="30"
-              value="4"
+              bind:value={defaultSeats}
               class="input"
             />
           </div>
+
           <div class="form-control flex flex-col gap-1">
             <label class="label" for="create-table-weight">Peso</label>
             <select
@@ -148,6 +204,7 @@
               rows="3"
               placeholder="Tema, espansioni, house rules, vibe"
               class="textarea rounded-lg"
+              bind:value={defaultDescription}
             ></textarea>
           </div>
           <div class="flex items-center justify-end gap-2">

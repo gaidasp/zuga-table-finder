@@ -16,6 +16,10 @@ type SearchItem = {
 type ThingDetail = {
   yearPublished?: string;
   image?: string;
+  description?: string;
+  minPlayers?: number;
+  maxPlayers?: number;
+  playingTime?: number;
 };
 
 let cachedDotEnvKey: string | undefined;
@@ -46,7 +50,28 @@ const decodeXmlEntities = (input: string) =>
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+    .replace(/&gt;/g, '>')
+    .replace(/&#10;/g, '\n')
+    .replace(/&#13;/g, '')
+    .replace(/&#([0-9]+);/g, (_, num) => {
+      const code = Number(num);
+      return Number.isFinite(code) ? String.fromCharCode(code) : '';
+    });
+
+const parseNumericValue = (tag: string | undefined) => {
+  if (!tag) return undefined;
+  const raw = getAttribute(tag, 'value');
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const normalizeDescription = (value: string | undefined) => {
+  if (!value) return undefined;
+  return value
+    .replace(/\r/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
 
 const getAttribute = (tag: string, attribute: string) => {
   const match = new RegExp(`${attribute}="([^"]*)"`, 'i').exec(tag);
@@ -96,10 +121,22 @@ const parseThingDetails = (xml: string): Map<string, ThingDetail> => {
     const yearTag = /<yearpublished\b[^>]*\/?>/i.exec(body)?.[0];
     const yearPublished = yearTag ? getAttribute(yearTag, 'value') : undefined;
 
+    const minPlayersTag = /<minplayers\b[^>]*\/?>/i.exec(body)?.[0];
+    const maxPlayersTag = /<maxplayers\b[^>]*\/?>/i.exec(body)?.[0];
+    const playingTimeTag = /<playingtime\b[^>]*\/?>/i.exec(body)?.[0];
+    const minPlayers = parseNumericValue(minPlayersTag);
+    const maxPlayers = parseNumericValue(maxPlayersTag);
+    const playingTime = parseNumericValue(playingTimeTag);
+
     const imageMatch = /<image>([^<]+)<\/image>/i.exec(body);
     const image = imageMatch ? decodeXmlEntities(imageMatch[1].trim()) : undefined;
 
-    details.set(id, { yearPublished, image });
+    const descriptionMatch = /<description>([\s\S]*?)<\/description>/i.exec(body);
+    const description = descriptionMatch
+      ? normalizeDescription(decodeXmlEntities(descriptionMatch[1]))
+      : undefined;
+
+    details.set(id, { yearPublished, image, description, minPlayers, maxPlayers, playingTime });
   }
 
   return details;
@@ -221,7 +258,11 @@ export const GET: RequestHandler = async ({ url }) => {
           name: item.name,
           yearPublished: detail?.yearPublished ?? item.yearPublished,
           image: detail?.image,
-          url: `https://boardgamegeek.com/boardgame/${item.id}`
+          url: `https://boardgamegeek.com/boardgame/${item.id}`,
+          description: detail?.description,
+          minPlayers: detail?.minPlayers,
+          maxPlayers: detail?.maxPlayers,
+          playingTime: detail?.playingTime
         };
       })
       .sort((a, b) => {

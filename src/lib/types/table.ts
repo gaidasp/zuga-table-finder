@@ -30,6 +30,7 @@ export type Table = {
   creatorUserId?: string;
   weight: GameWeight;
   seats: number;
+  sortOrder?: number;
   players: Player[];
   nightDate: string;
   createdAt: number;

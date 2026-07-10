@@ -173,6 +173,8 @@
         onSavePlayer={(tableId: string, player: Player) => actions.handleSavePlayer(tableId, player, stateManager.nightDate)}
         onDeleteTable={stateManager.deleteTableModal.open}
         onEditTable={stateManager.editTableModal.open}
+        onMoveTable={(tableId: string, direction: 'left' | 'right') =>
+          actions.handleTableReordered(tableId, direction, stateManager.nightDate)}
         onExpandTable={stateManager.detailTableModal.open}
         onDeletePlayer={stateManager.deletePlayerModal.open}
         onOpenDetailPlayer={handleOpenPlayerDetails}

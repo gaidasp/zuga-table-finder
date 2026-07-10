@@ -60,9 +60,33 @@
   };
 
   const selectGame = (game: BGGGame) => {
-    bggGame = game;
-    searchResults = [];
-    showDropdown = false;
+    const finalize = (selected: BGGGame) => {
+      bggGame = selected;
+      searchResults = [];
+      showDropdown = false;
+    };
+
+    if ((game.description ?? '').trim().length > 0) {
+      finalize(game);
+      return;
+    }
+
+    // Fallback: refresh detail to ensure description is available for modal autofill.
+    void (async () => {
+      try {
+        const response = await fetch(`/api/bgg/search?q=${encodeURIComponent(game.name)}`);
+        if (!response.ok) {
+          finalize(game);
+          return;
+        }
+
+        const data = await response.json();
+        const detailed = (data.games as BGGGame[] | undefined)?.find((candidate) => candidate.id === game.id);
+        finalize(detailed ?? game);
+      } catch {
+        finalize(game);
+      }
+    })();
   };
 
   const clearGame = () => {
@@ -179,6 +203,9 @@
     <input type="hidden" name="bggGameId" value={bggGame.id} />
     <input type="hidden" name="bggGameName" value={bggGame.name} />
     <input type="hidden" name="bggGameYear" value={bggGame.yearPublished || ''} />
+    <input type="hidden" name="bggGameDescription" value={bggGame.description || ''} />
+    <input type="hidden" name="bggGameMinPlayers" value={bggGame.minPlayers?.toString() || ''} />
+    <input type="hidden" name="bggGameMaxPlayers" value={bggGame.maxPlayers?.toString() || ''} />
   {/if}
 </div>
 

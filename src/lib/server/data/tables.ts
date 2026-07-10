@@ -15,6 +15,7 @@ const mapTable = (doc: TableDoc): Table => ({
   creatorUserId: doc.creatorUserId,
   weight: doc.weight,
   seats: doc.seats,
+  sortOrder: doc.sortOrder,
   players: doc.players,
   nightDate: doc.nightDate ?? new Date(doc.createdAt).toISOString().slice(0, 10),
   createdAt: doc.createdAt,
@@ -25,7 +26,7 @@ export async function listTables(nightDate?: string): Promise<Table[]> {
   const collection = await tableCollection();
   const items = await collection
     .find({ kind: 'table', nightDate: nightDate })
-    .sort({ createdAt: -1 })
+    .sort({ sortOrder: 1, createdAt: 1 })
     .toArray();
   return items.map(mapTable);
 }
@@ -39,8 +40,16 @@ export async function createTable(input: {
   nightDate?: string;
   bggGame?: BGGGame | null;
 }): Promise<Table> {
+  const collection = await tableCollection();
   const createdAt = Date.now();
   const nightDate = input.nightDate ?? new Date(createdAt).toISOString().slice(0, 10);
+  const lastForNight = await collection
+    .find({ kind: 'table', nightDate })
+    .sort({ sortOrder: -1, createdAt: -1 })
+    .limit(1)
+    .toArray();
+  const nextSortOrder = (lastForNight[0]?.sortOrder ?? lastForNight.length) + 1;
+
   const table: TableDoc = {
     _id: randomUUID(),
     kind: 'table',
@@ -49,21 +58,30 @@ export async function createTable(input: {
     creatorUserId: input.creatorUserId,
     weight: input.weight,
     seats: input.seats,
+    sortOrder: nextSortOrder,
     players: [],
     nightDate,
     createdAt,
     bggGame: input.bggGame ?? null
   };
-  await (await tableCollection()).insertOne(table);
+  await collection.insertOne(table);
   return mapTable(table);
 }
 
 export async function updateTable(
   tableId: string,
-  input: { title: string; description: string; seats: number; weight: GameWeight; bggGame?: BGGGame | null }
+  input: {
+    title: string;
+    description: string;
+    seats: number;
+    weight: GameWeight;
+    bggGame?: BGGGame | null;
+  }
 ): Promise<Table | undefined> {
   const collection = await tableCollection();
-  const updateFields: Partial<Pick<TableDoc, 'title' | 'description' | 'seats' | 'weight' | 'bggGame'>> = {
+  const updateFields: Partial<
+    Pick<TableDoc, 'title' | 'description' | 'seats' | 'weight' | 'bggGame'>
+  > = {
     title: input.title,
     description: input.description,
     seats: Number.isFinite(input.seats) ? Math.min(Math.max(1, input.seats), 30) : 4,
@@ -143,4 +161,45 @@ export async function getTableById(tableId: string): Promise<Table | undefined> 
   const collection = await tableCollection();
   const tableDoc = await collection.findOne({ _id: tableId, kind: 'table' });
   return tableDoc ? mapTable(tableDoc) : undefined;
+}
+
+export async function moveTable(tableId: string, direction: 'left' | 'right'): Promise<boolean> {
+  const collection = await tableCollection();
+  const current = await collection.findOne({ _id: tableId, kind: 'table' });
+  if (!current) return false;
+
+  const tables = await collection
+    .find({ kind: 'table', nightDate: current.nightDate })
+    .sort({ sortOrder: 1, createdAt: 1 })
+    .toArray();
+
+  if (tables.length < 2) return false;
+
+  const ordered = [...tables].sort((a, b) => {
+    const aOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+    const bOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.createdAt - b.createdAt;
+  });
+
+  const index = ordered.findIndex((table) => table._id === tableId);
+  if (index < 0) return false;
+
+  const targetIndex = direction === 'left' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= ordered.length) return false;
+
+  const temp = ordered[index];
+  ordered[index] = ordered[targetIndex];
+  ordered[targetIndex] = temp;
+
+  await collection.bulkWrite(
+    ordered.map((table, idx) => ({
+      updateOne: {
+        filter: { _id: table._id, kind: 'table' },
+        update: { $set: { sortOrder: idx + 1 } }
+      }
+    }))
+  );
+
+  return true;
 }

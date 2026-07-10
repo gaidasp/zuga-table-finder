@@ -3,6 +3,8 @@
   import {
     PencilSimpleIcon,
     UserPlusIcon,
+    CaretLeftIcon,
+    CaretRightIcon,
     ConfettiIcon,
     FeatherIcon,
     PuzzlePieceIcon,
@@ -17,10 +19,13 @@
     authUser = null as AuthUser | null,
     baseZIndex = 0,
     canMutate = false,
+    tableIndex = 0,
+    tableCount = 0,
     onAddPlayer,
     onSavePlayer = () => {},
     onDeleteTable,
     onEditTable,
+    onMoveTable = () => {},
     onExpandTable,
     onDeletePlayer,
     onOpenDetailPlayer
@@ -40,6 +45,14 @@
 
   const handleAddPlayer = () => {
     onAddPlayer(table);
+  };
+
+  const handleMoveLeft = () => {
+    onMoveTable(table.id, 'left');
+  };
+
+  const handleMoveRight = () => {
+    onMoveTable(table.id, 'right');
   };
 
   const handleOpenDetailPlayer = (player: Player) => {
@@ -65,6 +78,8 @@
         (authUser.isAdmin || (table?.creatorUserId ? authUser.id === table.creatorUserId : false))
     )
   );
+
+  const canSortTables = $derived.by(() => Boolean(canMutate && authUser?.isAdmin));
 </script>
 
 <article class="card bg-base-100 card-border border-base-300 transition hover:shadow-lg w-full">
@@ -128,6 +143,26 @@
             type="button"
           >
             <PencilSimpleIcon size={18} weight="bold" aria-hidden="true" />
+          </button>
+        {/if}
+        {#if canSortTables}
+          <button
+            class="btn btn-sm btn-ghost px-0"
+            aria-label="Sposta tavolo a sinistra"
+            onclick={handleMoveLeft}
+            type="button"
+            disabled={tableIndex <= 0}
+          >
+            <CaretLeftIcon size={18} weight="bold" aria-hidden="true" />
+          </button>
+          <button
+            class="btn btn-sm btn-ghost px-0"
+            aria-label="Sposta tavolo a destra"
+            onclick={handleMoveRight}
+            type="button"
+            disabled={tableIndex >= tableCount - 1}
+          >
+            <CaretRightIcon size={18} weight="bold" aria-hidden="true" />
           </button>
         {/if}
       </div>

@@ -14,7 +14,8 @@ import {
   updateTable,
   getDefaultNightDate,
   getSparePlayerById,
-  getTableById
+  getTableById,
+  moveTable
 } from '$server/data';
 import {
   authenticateWithGuid,
@@ -82,6 +83,13 @@ const buildPageData = async (nightDateInput?: string) => {
 
 const clean = (value: FormDataEntryValue | null, limit: number) =>
   (value?.toString().trim() ?? '').slice(0, limit);
+
+const cleanInt = (value: FormDataEntryValue | null, min: number, max: number): number | undefined => {
+  if (value === null) return undefined;
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return undefined;
+  return Math.min(max, Math.max(min, Math.round(raw)));
+};
 
 const requireAuthenticated = (locals: App.Locals, form: string) => {
   if (!locals.user) {
@@ -177,11 +185,17 @@ export const actions: Actions = {
       const bggGameId = clean(data.get('bggGameId'), 64);
       const bggGameName = clean(data.get('bggGameName'), 256);
       const bggGameYear = clean(data.get('bggGameYear'), 16);
+      const bggGameDescription = clean(data.get('bggGameDescription'), 4000);
+      const bggGameMinPlayers = cleanInt(data.get('bggGameMinPlayers'), 1, 30);
+      const bggGameMaxPlayers = cleanInt(data.get('bggGameMaxPlayers'), 1, 30);
       const bggGame: BGGGame | null = bggGameId && bggGameName ? {
         id: bggGameId,
         name: bggGameName,
         yearPublished: bggGameYear || undefined,
-        url: `https://boardgamegeek.com/boardgame/${bggGameId}`
+        url: `https://boardgamegeek.com/boardgame/${bggGameId}`,
+        description: bggGameDescription || undefined,
+        minPlayers: bggGameMinPlayers,
+        maxPlayers: bggGameMaxPlayers
       } : null;
 
       if (title.length < 3) {
@@ -231,11 +245,17 @@ export const actions: Actions = {
       const bggGameId = clean(data.get('bggGameId'), 64);
       const bggGameName = clean(data.get('bggGameName'), 256);
       const bggGameYear = clean(data.get('bggGameYear'), 16);
+      const bggGameDescription = clean(data.get('bggGameDescription'), 4000);
+      const bggGameMinPlayers = cleanInt(data.get('bggGameMinPlayers'), 1, 30);
+      const bggGameMaxPlayers = cleanInt(data.get('bggGameMaxPlayers'), 1, 30);
       const bggGame: BGGGame | null = bggGameId && bggGameName ? {
         id: bggGameId,
         name: bggGameName,
         yearPublished: bggGameYear || undefined,
-        url: `https://boardgamegeek.com/boardgame/${bggGameId}`
+        url: `https://boardgamegeek.com/boardgame/${bggGameId}`,
+        description: bggGameDescription || undefined,
+        minPlayers: bggGameMinPlayers,
+        maxPlayers: bggGameMaxPlayers
       } : null;
 
       if (title.length < 3) {
@@ -266,7 +286,13 @@ export const actions: Actions = {
       }
 
       const weight = weightRaw as (typeof WEIGHTS)[number];
-      const table = await updateTable(tableId, { title, description, seats, weight, bggGame });
+      const table = await updateTable(tableId, {
+        title,
+        description,
+        seats,
+        weight,
+        bggGame
+      });
       if (!table) return fail(404, { message: 'Tavolo non trovato', form: 'update' });
 
       
@@ -423,6 +449,42 @@ export const actions: Actions = {
       return { success: true, form: 'deleteTable', tableId: tableId as string };
     } catch (error) {
       return handleDatabaseActionError(error, 'deleteTable');
+    }
+  },
+
+  reorderTable: async ({ request, locals }) => {
+    try {
+      const authFailure = requireAuthenticated(locals, 'reorderTable');
+      if (authFailure) return authFailure;
+
+      if (!isAdminUser(locals)) {
+        return fail(403, {
+          message: 'Solo gli admin possono riordinare i tavoli.',
+          form: 'reorderTable'
+        });
+      }
+
+      const data = await request.formData();
+      if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
+
+      const tableId = clean(data.get('tableId'), 128);
+      const direction = clean(data.get('direction'), 16);
+      if (!tableId) return fail(400, { message: 'Tavolo non valido', form: 'reorderTable' });
+      if (direction !== 'left' && direction !== 'right') {
+        return fail(400, { message: 'Direzione non valida', form: 'reorderTable' });
+      }
+
+      const table = await getTableById(tableId);
+      if (!table) return fail(404, { message: 'Tavolo non trovato', form: 'reorderTable' });
+
+      const moved = await moveTable(tableId, direction);
+      if (!moved) {
+        return fail(400, { message: 'Impossibile spostare ulteriormente il tavolo.', form: 'reorderTable' });
+      }
+
+      return { success: true, form: 'reorderTable', tableId, direction };
+    } catch (error) {
+      return handleDatabaseActionError(error, 'reorderTable');
     }
   },
 

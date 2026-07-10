@@ -35,6 +35,27 @@ export class ActionsManager {
     this.state.detailTableModal.close();
   };
 
+  handleTableReordered = async (
+    tableId: string,
+    direction: 'left' | 'right',
+    nightDate: string
+  ) => {
+    const form = new FormData();
+    form.set('tableId', tableId);
+    form.set('direction', direction);
+
+    const res = await fetch('?/reorderTable', {
+      method: 'POST',
+      headers: { accept: 'application/json' },
+      body: form
+    });
+
+    if (!res.ok) return;
+
+    await this.reloadData(nightDate);
+    this.state.setFocusedTable(tableId);
+  };
+
 
   // Player Actions
   handleSavePlayer = async (tableId: string, updated: Player, nightDate: string) => {

@@ -12,13 +12,13 @@
     onSavePlayer,
     onDeleteTable,
     onEditTable,
+    onMoveTable,
     onExpandTable,
     onDeletePlayer,
     onOpenDetailPlayer
   } = $props();
 
-  const sortedTables = $derived([...tables].sort((a, b) => b.players.length - a.players.length));
-  const carouselSortedTables = $derived([...tables].sort((a, b) => a.createdAt - b.createdAt));
+  const orderedTables = $derived([...tables]);
 
   function scrollToIndex(index: number) {
     requestAnimationFrame(() => {
@@ -29,7 +29,7 @@
 
   $effect(() => {
     if (focusedTableId && tables.length > 3) {
-      const index = carouselSortedTables.findIndex(t => t.id === focusedTableId);
+      const index = orderedTables.findIndex(t => t.id === focusedTableId);
       if (index !== -1) {
         // Double RAF to ensure DOM is fully updated after data reload
         requestAnimationFrame(() => {
@@ -70,16 +70,19 @@
         </div>
       {:else if tables.length <= 3}
         <div class="grid gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
-          {#each sortedTables as table (table.id)}
+          {#each orderedTables as table, index (table.id)}
             <TableCard
               {baseZIndex}
               {canMutate}
               {authUser}
               {table}
+              tableIndex={index}
+              tableCount={orderedTables.length}
               {onAddPlayer}
               {onSavePlayer}
               {onDeleteTable}
               {onEditTable}
+              {onMoveTable}
               {onExpandTable}
               {onDeletePlayer}
               {onOpenDetailPlayer}
@@ -88,17 +91,20 @@
         </div>
       {:else}
         <div class="carousel carousel-center w-full space-x-2 px-4 pt-1 pb-1">
-          {#each carouselSortedTables as table, index (table.id)}
+          {#each orderedTables as table, index (table.id)}
             <div id="table-{index}" class="carousel-item w-[80vw] xl:w-[30vw] lg:w-[30vw]">
               <TableCard
                 {baseZIndex}
                 {canMutate}
                 {authUser}
                 {table}
+                tableIndex={index}
+                tableCount={orderedTables.length}
                 {onAddPlayer}
                 {onSavePlayer}
                 {onDeleteTable}
                 {onEditTable}
+                {onMoveTable}
                 {onExpandTable}
                 {onDeletePlayer}
                 {onOpenDetailPlayer}
@@ -107,7 +113,7 @@
           {/each}
         </div>
         <div class="flex flex-wrap justify-center w-full pt-0 pb-1 gap-2">
-          {#each carouselSortedTables as table, index (table.id)}
+          {#each orderedTables as table, index (table.id)}
             {@const weightColor = table.weight === 'Party' ? 'text-warning' : table.weight === 'Leggero (max 45 min)' ? 'text-info' : table.weight === 'Medio (1-2h)' ? 'text-success' : 'text-error'}
             <a href="#table-{index}" onclick={e => {e.preventDefault(); scrollToIndex(index);}} class="btn btn-xs {weightColor}" aria-label="Vai al tavolo {index + 1}">{index + 1}</a>
           {/each}
