@@ -18,7 +18,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5.1.1
         with:
           role-to-assume: ${{ vars.AWS_ASSUMED_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: "${{ vars.AWS_REGION || 'eu-west-1' }}"
       - name: Start build
         id: run
         run: aws lambda invoke --function-name ${{ vars.AWS_LAMBDA_FUNCTION_NAME }} --payload '{}' response.json
