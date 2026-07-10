@@ -108,13 +108,27 @@
             {#each searchResults as game}
               <button
                 type="button"
-                class="w-full text-left px-4 py-2 hover:bg-base-200 transition-colors"
+                class="w-full text-left px-3 py-2 hover:bg-base-200 transition-colors"
                 onclick={() => selectGame(game)}
               >
-                <div class="font-medium">{game.name}</div>
-                {#if game.yearPublished}
-                  <div class="text-xs text-base-content/60">({game.yearPublished})</div>
-                {/if}
+                <div class="grid items-center gap-3" style="grid-template-columns: 10% 90%;">
+                  <div class="w-full aspect-square rounded overflow-hidden border border-base-300 bg-base-200 flex items-center justify-center">
+                    {#if game.image}
+                      <img
+                        src={game.image}
+                        alt={`Copertina ${game.name}`}
+                        class="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    {:else}
+                      <span class="text-[10px] text-base-content/60">N/A</span>
+                    {/if}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-medium truncate">{game.name}</div>
+                    <div class="text-xs text-base-content/60">({game.yearPublished || 'n.d.'})</div>
+                  </div>
+                </div>
               </button>
             {/each}
           {:else if searchPerformed}

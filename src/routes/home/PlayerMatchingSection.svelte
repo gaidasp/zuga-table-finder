@@ -1,7 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { TrashIcon, UserIcon, ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon } from 'phosphor-svelte';
-  import type { SparePlayer, GameWeight } from '$lib/types';
+  import type { AuthUser, SparePlayer, GameWeight } from '$lib/types';
+  import { getAvatarBgClass } from '$lib/utils/avatar';
   import DeleteSparePlayerModal from './modals/DeleteSparePlayerModal.svelte';
   
   class DeleteSparePlayerModalState {
@@ -22,6 +23,8 @@
   let {
     weights = {} as GameWeight[],
     sparePlayers = {} as SparePlayer[],
+    authUser = null as AuthUser | null,
+    canMutate = false,
     baseZIndex = 1,
     honeypotName = '',
     nightDate = null,
@@ -42,11 +45,30 @@
     deleteModal.close();
   };
 
+  const getInitial = (name: string) => {
+    const first = name.trim().charAt(0);
+    return (first || 'G').toUpperCase();
+  };
+
+  const normalizeName = (value: string | null | undefined) => (value ?? '').trim().toLowerCase();
+
+  const shouldUseProfilePhoto = (name: string) => {
+    if (!authUser?.avatarDataUrl) return false;
+    return normalizeName(name) === normalizeName(authUser.nickname);
+  };
+
+  const canDeleteSpare = (sparePlayer: SparePlayer) =>
+    Boolean(
+      canMutate &&
+        authUser?.id &&
+        (authUser.isAdmin || (sparePlayer.userId ? sparePlayer.userId === authUser.id : false))
+    );
+
 </script>
 
 <section aria-labelledby="matching-heading">
   <article class="card card-border" style="z-index:{baseZIndex}">
-    <div class="card-body gap-2 sm:gap-4 p-4 sm:p-8">
+    <div class="card-body gap-2 sm:gap-4 p-4 sm:p-6">
       <header class="flex items-center justify-between">
         <div>
           <h2 id="matching-heading" class="card-title">Sei indeciso?</h2>
@@ -92,6 +114,22 @@
                         {#each group.players as sparePlayer}
                           <tr>
                             <td class="font-medium flex items-center gap-1">
+                              {#if shouldUseProfilePhoto(sparePlayer.name)}
+                                <span class="inline-flex h-4 w-4 shrink-0 overflow-hidden rounded-full aspect-square" aria-hidden="true">
+                                  <img
+                                    src={authUser?.avatarDataUrl}
+                                    alt=""
+                                    class="h-full w-full object-cover object-center"
+                                  />
+                                </span>
+                              {:else}
+                                <span
+                                  class={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full aspect-square text-[10px] font-bold leading-none text-white ${sparePlayer.avatarColor ?? getAvatarBgClass(sparePlayer.id || sparePlayer.name)}`}
+                                  aria-hidden="true"
+                                >
+                                  {getInitial(sparePlayer.name)}
+                                </span>
+                              {/if}
                               {sparePlayer.name}
                             </td>
                             <td class="text-right text-xs text-base-content/70">
@@ -101,16 +139,18 @@
                                 timeStyle: 'short'
                               })}
                             </td>
-                            <td class="text-right">
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-ghost btn-error hover:btn-outline focus-visible:outline-none focus-visible:ring"
-                                aria-label={`Rimuovi ${sparePlayer.name}`}
-                                onclick={() => deleteModal.open(sparePlayer)}
-                              >
-                                <TrashIcon size={14} weight="bold" aria-hidden="true" />
-                              </button>
-                            </td>
+                            {#if canDeleteSpare(sparePlayer)}
+                              <td class="text-right">
+                                <button
+                                  type="button"
+                                  class="btn btn-xs btn-ghost btn-error hover:btn-outline focus-visible:outline-none focus-visible:ring"
+                                  aria-label={`Rimuovi ${sparePlayer.name}`}
+                                  onclick={() => deleteModal.open(sparePlayer)}
+                                >
+                                  <TrashIcon size={14} weight="bold" aria-hidden="true" />
+                                </button>
+                              </td>
+                            {/if}
                           </tr>
                         {/each}
                       </tbody>
@@ -125,13 +165,15 @@
     </div>
   </article>
 
-  <DeleteSparePlayerModal
-    open={deleteModal.isOpen}
-    zIndex={baseZIndex + 2}
-    {honeypotName}
-    sparePlayer={deleteModal.sparePlayer}
-    nightDate={nightDate}
-    close={deleteModal.close}
-    deleted={handleSparePlayerDeleted}
-  />
+  {#if canMutate}
+    <DeleteSparePlayerModal
+      open={deleteModal.isOpen}
+      zIndex={baseZIndex + 2}
+      {honeypotName}
+      sparePlayer={deleteModal.sparePlayer}
+      nightDate={nightDate}
+      close={deleteModal.close}
+      deleted={handleSparePlayerDeleted}
+    />
+  {/if}
 </section>

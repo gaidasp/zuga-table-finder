@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Table } from '$lib/types';
+  import type { AuthUser, Table } from '$lib/types';
   import {
     PencilSimpleIcon,
     UserPlusIcon,
@@ -10,10 +10,13 @@
     GraduationCapIcon
   } from 'phosphor-svelte';
   import { getPlayerBadgeStyle } from '$lib/utils/player';
+  import { getAvatarBgClass } from '$lib/utils/avatar';
   import type { Player } from '$lib/types';
   let {
     table = null,
+    authUser = null as AuthUser | null,
     baseZIndex = 0,
+    canMutate = false,
     onAddPlayer,
     onSavePlayer = () => {},
     onDeleteTable,
@@ -42,6 +45,26 @@
   const handleOpenDetailPlayer = (player: Player) => {
     onOpenDetailPlayer(table.id, player);
   };
+
+  const getInitial = (name: string) => {
+    const first = name.trim().charAt(0);
+    return (first || 'G').toUpperCase();
+  };
+
+  const normalizeName = (value: string | null | undefined) => (value ?? '').trim().toLowerCase();
+
+  const shouldUseProfilePhoto = (name: string) => {
+    if (!authUser?.avatarDataUrl) return false;
+    return normalizeName(name) === normalizeName(authUser.nickname);
+  };
+
+  const canManageTable = $derived.by(() =>
+    Boolean(
+      canMutate &&
+        authUser?.id &&
+        (authUser.isAdmin || (table?.creatorUserId ? authUser.id === table.creatorUserId : false))
+    )
+  );
 </script>
 
 <article class="card bg-base-100 card-border border-base-300 transition hover:shadow-lg w-full">
@@ -97,14 +120,16 @@
           {table.players.length}/{table.seats}
         </span>
         
-        <button
-          class="btn btn-sm btn-ghost px-1"
-          aria-label="Modifica tavolo"
-          onclick={handleEditTable}
-          type="button"
-        >
-          <PencilSimpleIcon size={18} weight="bold" aria-hidden="true" />
-        </button>
+        {#if canManageTable}
+          <button
+            class="btn btn-sm btn-ghost px-1"
+            aria-label="Modifica tavolo"
+            onclick={handleEditTable}
+            type="button"
+          >
+            <PencilSimpleIcon size={18} weight="bold" aria-hidden="true" />
+          </button>
+        {/if}
       </div>
     </div>
   </div>
@@ -123,6 +148,22 @@
             aria-label={`Dettagli ${player.name}`}
             onclick={() => handleOpenDetailPlayer(player)}
           >
+            {#if shouldUseProfilePhoto(player.name)}
+              <span class="inline-flex h-4 w-4 shrink-0 overflow-hidden rounded-full aspect-square" aria-hidden="true">
+                <img
+                  src={authUser?.avatarDataUrl}
+                  alt=""
+                  class="h-full w-full object-cover object-center"
+                />
+              </span>
+            {:else}
+              <span
+                class={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full aspect-square text-[10px] font-bold leading-none text-white ${player.avatarColor ?? getAvatarBgClass(player.id || player.name)}`}
+                aria-hidden="true"
+              >
+                {getInitial(player.name)}
+              </span>
+            {/if}
             <playerBadge.Icon size={14} weight="fill" aria-hidden="true" class="shrink-0" />
             <span class="truncate" style="max-width: 14ch;">
               {player.name}
@@ -130,13 +171,15 @@
           </button>
         {/each}
       {/if}
-      <button
-        class="btn btn-md btn-primary btn-circle hover:scale-110 transition-transform"
-        aria-label="Aggiungi player"
-        onclick={handleAddPlayer}
-      >
-        <UserPlusIcon size={22} weight="bold" aria-hidden="true" />
-      </button>
+      {#if canMutate}
+        <button
+          class="btn btn-md btn-primary btn-circle aspect-square hover:scale-110 transition-transform"
+          aria-label="Aggiungi player"
+          onclick={handleAddPlayer}
+        >
+          <UserPlusIcon size={22} weight="bold" aria-hidden="true" />
+        </button>
+      {/if}
     </div>
   </div>
 </article>

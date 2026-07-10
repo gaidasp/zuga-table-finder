@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Player, Table } from '$lib/types';
+  import type { AuthUser, Player, Table } from '$lib/types';
   import { enhance } from '$app/forms';
   import { X } from 'phosphor-svelte';
 
@@ -8,14 +8,37 @@
     zIndex = 0,
     honeypotName = "",
     table = null,
+    authUser = null as AuthUser | null,
     players = [] as Player[],
     close,
     added
   } = $props() 
   
   let errorMsg = $state('');
+  let name = $state('');
+
+  const normalizeName = (value: string | null | undefined) => (value ?? '').trim().toLowerCase();
+
+  const isCurrentUserAlreadyInTable = (currentTable: Table | null, currentUser: AuthUser | null) => {
+    if (!currentTable || !currentUser?.id) return false;
+    return currentTable.players.some((player) => player.userId && player.userId === currentUser.id);
+  };
+
   $effect(() => {
     if (open) errorMsg = '';
+  });
+
+  $effect(() => {
+    if (!open || !table) return;
+
+    const alreadyInTable = isCurrentUserAlreadyInTable(table, authUser);
+    if (alreadyInTable) {
+      name = '';
+      return;
+    }
+
+    const nickname = authUser?.nickname?.trim() ?? '';
+    name = nickname;
   });
 
   const enhanceHandler = () => {
@@ -67,18 +90,24 @@
           {#if errorMsg}
             <div class="alert alert-error alert-soft text-sm">{errorMsg}</div>
           {/if}
-          <div class="form-control flex flex-col gap-1">
-            <label class="label" for="add-player-name">
-              <span class="label-text">Nome</span>
-            </label>
+          <label class="form-control">
+            <span class="label-text mb-1">Nome giocatore</span>
             <input
-              id="add-player-name"
               name="name"
+              class="input input-bordered"
+              maxlength="48"
+              bind:value={name}
+              placeholder={isCurrentUserAlreadyInTable(table, authUser)
+                ? 'Inserisci nome giocatore non registrato'
+                : 'Di default: il tuo nickname (modificabile)'}
               required
-              placeholder="Nickname o nome"
-              class="input"
             />
-          </div>
+            {#if !isCurrentUserAlreadyInTable(table, authUser)}
+              <span class="label-text-alt opacity-70">Puoi lasciare il tuo nickname o inserire un altro giocatore non registrato.</span>
+            {:else}
+              <span class="label-text-alt opacity-70">Sei gia in questo tavolo: aggiungi un altro giocatore manualmente.</span>
+            {/if}
+          </label>
           <div class="form-control">
             <label class="label cursor-pointer justify-start gap-2" for="add-player-is-beginner">
               <input

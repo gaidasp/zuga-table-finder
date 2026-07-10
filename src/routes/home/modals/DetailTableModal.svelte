@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Table, Player } from '$lib/types';
+  import type { AuthUser, Table, Player } from '$lib/types';
   import {
     PencilSimpleIcon,
     TrashIcon,
@@ -10,6 +10,8 @@
   let {
     open = false,
     zIndex = 0,
+    canMutate = false,
+    authUser = null as AuthUser | null,
     table = null,
     close,
     onAddPlayer,
@@ -50,6 +52,17 @@
   const handleOpenDetailPlayer = (player: Player) => {
     onOpenDetailPlayer(table.id, player);
   };
+
+  const canManageTable = $derived.by(() =>
+    Boolean(
+      canMutate &&
+        authUser?.id &&
+        (authUser.isAdmin || (table?.creatorUserId ? authUser.id === table.creatorUserId : false))
+    )
+  );
+
+  const canDeletePlayer = (player: Player) =>
+    Boolean(canMutate && authUser?.id && (authUser.isAdmin || (player.userId ? authUser.id === player.userId : false)));
 </script>
 
 {#if open && table}
@@ -62,14 +75,16 @@
         <div class="flex items-center justify-between gap-2 p-4">
           <h3 class="card-title text-base px-2 truncate" style="max-width: 14ch;">{table.title}</h3>
           <div class="flex items-center gap-1 shrink-0">
-            <button
-              class="btn btn-sm btn-ghost"
-              aria-label="Modifica tavolo"
-              onclick={handleEditTable}
-              type="button"
-            >
-              <PencilSimpleIcon size={18} weight="bold" aria-hidden="true" />
-            </button>
+            {#if canManageTable}
+              <button
+                class="btn btn-sm btn-ghost"
+                aria-label="Modifica tavolo"
+                onclick={handleEditTable}
+                type="button"
+              >
+                <PencilSimpleIcon size={18} weight="bold" aria-hidden="true" />
+              </button>
+            {/if}
             <button
               class="btn btn-sm btn-ghost"
               aria-label="Chiudi dettagli"
@@ -159,15 +174,17 @@
                           >
                         </span>
                       </td>
-                      <td class="text-right px-2 py-1">
-                        <button
-                          class="btn btn-xs btn-ghost btn-error focus-visible:outline-none focus-visible:ring"
-                          aria-label={`Rimuovi ${player.name}`}
-                          onclick={() => handleDeletePlayerButton(player)}
-                        >
-                          <TrashIcon size={16} weight="bold" aria-hidden="true" />
-                        </button>
-                      </td>
+                      {#if canDeletePlayer(player)}
+                        <td class="text-right px-2 py-1">
+                          <button
+                            class="btn btn-xs btn-ghost btn-error focus-visible:outline-none focus-visible:ring"
+                            aria-label={`Rimuovi ${player.name}`}
+                            onclick={() => handleDeletePlayerButton(player)}
+                          >
+                            <TrashIcon size={16} weight="bold" aria-hidden="true" />
+                          </button>
+                        </td>
+                      {/if}
                     </tr>
                   {/each}
                 </tbody>
@@ -178,24 +195,26 @@
 
         <div class="divider my-0"></div>
 
-        <div class="card-actions items-center justify-between p-2">
-          <button
-            class="btn btn-md btn-error btn-circle hover:scale-120 transition-transform"
-            aria-label="Elimina tavolo"
-            onclick={handleDeleteTable}
-            type="button"
-          >
-            <TrashIcon size={22} weight="bold" aria-hidden="true" />
-          </button>
-          <button
-            class="btn btn-md btn-primary btn-circle hover:scale-120 transition-transform"
-            aria-label="Aggiungi player"
-            onclick={handleAddPlayer}
-            type="button"
-          >
-            <UserPlusIcon size={22} weight="bold" aria-hidden="true" />
-          </button>
-        </div>
+        {#if canManageTable}
+          <div class="card-actions items-center justify-between p-2">
+            <button
+              class="btn btn-md btn-error btn-circle aspect-square hover:scale-120 transition-transform"
+              aria-label="Elimina tavolo"
+              onclick={handleDeleteTable}
+              type="button"
+            >
+              <TrashIcon size={22} weight="bold" aria-hidden="true" />
+            </button>
+            <button
+              class="btn btn-md btn-primary btn-circle aspect-square hover:scale-120 transition-transform"
+              aria-label="Aggiungi player"
+              onclick={handleAddPlayer}
+              type="button"
+            >
+              <UserPlusIcon size={22} weight="bold" aria-hidden="true" />
+            </button>
+          </div>
+        {/if}
       </div>
     </div>
     <button type="button" class="modal-backdrop" onclick={close} aria-label="Chiudi"></button>

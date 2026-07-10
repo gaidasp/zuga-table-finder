@@ -13,9 +13,13 @@ vi.mock('mongodb', () => ({
   ServerApiVersion: { v1: '1' }
 }));
 
-vi.mock('$env/static/private', () => ({
-  MONGODB_URI: 'mongodb://localhost:27017',
-  MONGODB_DB: 'test'
+vi.mock('$env/dynamic/private', () => ({
+  env: {
+    MONGODB_URI: 'mongodb://localhost:27017',
+    MONGODB_DB: 'test',
+    MONGO_URI: 'mongodb://localhost:27017',
+    BGG_API_KEY: 'test-key'
+  }
 }));
 
 describe('Server Actions Tests', () => {

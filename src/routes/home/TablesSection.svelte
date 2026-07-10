@@ -1,10 +1,12 @@
 <script lang="ts">
-  import type { Table } from '$lib/types';
+  import type { AuthUser, Table } from '$lib/types';
   import TableCard from './TableCard.svelte';
 
   let {
     tables = [],
+    authUser = null as AuthUser | null,
     baseZIndex = 0,
+    canMutate = false,
     focusedTableId = null,
     onAddPlayer,
     onSavePlayer,
@@ -42,7 +44,7 @@
 
 <section aria-labelledby="tables-heading">
   <article class="card card-border" style={`z-index:${baseZIndex}`}>
-    <div class="card-body gap-2 sm:gap-4 p-4 sm:p-8">
+    <div class="card-body gap-2 sm:gap-4 p-4 sm:p-6">
       <header class="flex items-center justify-between">
         <div>
           <h2 id="tables-heading" class="card-title">Tavoli attivi</h2>
@@ -71,6 +73,8 @@
           {#each sortedTables as table (table.id)}
             <TableCard
               {baseZIndex}
+              {canMutate}
+              {authUser}
               {table}
               {onAddPlayer}
               {onSavePlayer}
@@ -83,11 +87,13 @@
           {/each}
         </div>
       {:else}
-        <div class="carousel carousel-center w-full space-x-2 p-4">
+        <div class="carousel carousel-center w-full space-x-2 px-4 pt-1 pb-1">
           {#each carouselSortedTables as table, index (table.id)}
             <div id="table-{index}" class="carousel-item w-[80vw] xl:w-[30vw] lg:w-[30vw]">
               <TableCard
                 {baseZIndex}
+                {canMutate}
+                {authUser}
                 {table}
                 {onAddPlayer}
                 {onSavePlayer}
@@ -100,7 +106,7 @@
             </div>
           {/each}
         </div>
-        <div class="flex flex-wrap justify-center w-full py-2 gap-2">
+        <div class="flex flex-wrap justify-center w-full pt-0 pb-1 gap-2">
           {#each carouselSortedTables as table, index (table.id)}
             {@const weightColor = table.weight === 'Party' ? 'text-warning' : table.weight === 'Leggero (max 45 min)' ? 'text-info' : table.weight === 'Medio (1-2h)' ? 'text-success' : 'text-error'}
             <a href="#table-{index}" onclick={e => {e.preventDefault(); scrollToIndex(index);}} class="btn btn-xs {weightColor}" aria-label="Vai al tavolo {index + 1}">{index + 1}</a>

@@ -72,10 +72,7 @@
           {#if errorMsg}
             <div class="alert alert-error alert-soft text-sm">{errorMsg}</div>
           {/if}
-          <div class="form-control flex flex-col gap-1">
-            <label class="label" for="spare-player-name">Il tuo nome</label>
-            <input id="spare-player-name" name="name" required placeholder="Marta" class="input" />
-          </div>
+          <p class="text-sm opacity-70">Verrà usato il tuo nickname profilo.</p>
           <div class="form-control flex flex-col gap-1">
             <label class="label" for="spare-player-weight">Peso preferito</label>
             <select id="spare-player-weight" name="weight" class="select" required bind:value={defaultWeight}>

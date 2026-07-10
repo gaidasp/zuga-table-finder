@@ -102,14 +102,10 @@ class DetailTableModalState {
 
 class AddPlayerModalState {
   isOpen = $state(false);
-  table: { id: string; title: string; nightDate: string } | null = $state(null);
+  table: Table | null = $state(null);
 
   open = (table: Table) => {
-    this.table = {
-      id: table.id,
-      title: table.title,
-      nightDate: table.nightDate
-    };
+    this.table = table;
     this.isOpen = true;
   };
 

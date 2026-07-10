@@ -1,6 +1,6 @@
 # Zuga Table Finder
 
-App SvelteKit mobile-first per creare tavoli da gioco da tavolo o iscriversi a categorie senza account. Include protezioni anti-abuso di base (honeypot + rate limit lato server) e GitHub Actions per CI.
+App SvelteKit mobile-first per creare tavoli da gioco da tavolo o iscriversi a categorie con accesso tramite codice GUID (senza password). Include protezioni anti-abuso di base (honeypot + rate limit lato server) e GitHub Actions per CI.
 
 ## Stack
 - SvelteKit + TypeScript
@@ -14,7 +14,7 @@ App SvelteKit mobile-first per creare tavoli da gioco da tavolo o iscriversi a c
 ```
 cp .env.example .env
 ```
-Modifica `.env` con le tue credenziali MongoDB.
+Modifica `.env` con le tue credenziali MongoDB e BGG.
 
 2) Installa le dipendenze
 ```
@@ -54,7 +54,7 @@ npm run test:ui
 npm run test:coverage
 ```
 
-See [TESTING.md](TESTING.md) for detailed test documentation.
+See [docs/TESTING.md](docs/TESTING.md) for detailed test documentation.
 
 ## Note anti-spam
 - Campo honeypot (`{{HONEYPOTNAME}}`) su tutti i form.
@@ -63,13 +63,30 @@ See [TESTING.md](TESTING.md) for detailed test documentation.
 - Aggiungi CAPTCHA (Cloudflare Turnstile/hCaptcha) per ulteriore protezione in produzione.
 
 ## Come provare i flussi
-- Crea un tavolo dalla card "Crea un tavolo".
-- Iscriviti a un tavolo dal menu a tendina.
-- Iscriviti a una categoria dal relativo form.
+- Da guest puoi visualizzare tutti i tavoli e le liste giocatori.
+- Effettua login dal pulsante in header con il tuo GUID per abilitare le modifiche.
+- Aggiorna nickname/avatar da `/profile`.
+- Genera nuovi GUID da `/admin/users` con account admin o `ADMIN_MASTER_CODE`.
 
 ## Variabili d'ambiente richieste
 - `MONGODB_URI`: Connection string MongoDB (obbligatorio)
+- `MONGO_URI`: Alias opzionale di `MONGODB_URI`, utile in container/runtime server
 - `MONGODB_DB`: Nome del database (opzionale, default: 'Zuga')
+- `BGG_API_KEY`: API key BGG usata dalla route server `/api/bgg/search`
+- `ADMIN_MASTER_CODE`: Codice admin speciale per creare nuovi utenti GUID senza login admin (opzionale ma consigliato)
+
+## Docker e variabili runtime
+L'app legge `MONGO_URI` / `MONGODB_URI` e `BGG_API_KEY` a runtime dal server environment.
+Non servono build args o costanti di deploy nel codice.
+
+Esempio:
+```bash
+docker run -p 3000:3000 \
+	-e MONGO_URI="mongodb://host.docker.internal:27017" \
+	-e MONGODB_DB="zuga" \
+	-e BGG_API_KEY="your-bgg-key" \
+	zuga-table-finder
+```
 
 ## GitHub Secrets
 Per CI/CD sono richiesti i seguenti secrets in GitHub (Settings → Secrets and variables → Actions):
@@ -103,4 +120,9 @@ Per CI/CD sono richiesti i seguenti secrets in GitHub (Settings → Secrets and 
 - `CLOUDFRONT_DISTRIBUTION_ID`: ID distribuzione CloudFront
 
 Il workflow di deployment (`deploy-aws.yml`) supporta multiple opzioni di deployment. Configura solo i secrets per il metodo che intendi usare.
+
+TODO
+- WHAT HAPPENS WHEN USERS ARE DELETED BY ADMINS?
+- I do not see edit and delete buttons in spare players list enymore
+- add list of active logged in users
 

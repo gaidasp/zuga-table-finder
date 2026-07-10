@@ -1,4 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
+import { resolveUserFromSession, SESSION_COOKIE_NAME } from '$server/auth';
 
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 100;
@@ -46,6 +47,20 @@ export const handle: Handle = async ({ event, resolve }) => {
         'retry-after': Math.ceil((blockUntil - now) / 1000).toString()
       }
     });
+  }
+
+  event.locals.user = null;
+  const sessionToken = event.cookies.get(SESSION_COOKIE_NAME);
+  if (sessionToken) {
+    try {
+      const user = await resolveUserFromSession(sessionToken);
+      event.locals.user = user;
+      if (!user) {
+        event.cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+      }
+    } catch {
+      event.locals.user = null;
+    }
   }
 
   const response = await resolve(event);

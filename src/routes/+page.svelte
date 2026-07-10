@@ -1,28 +1,38 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import type { ActionData } from './$types';
   import { deserialize } from '$app/forms';
   import type { Player, SparePlayer, Table } from '$lib/types';
-  import TablesSection from '$lib/components/TablesSection.svelte';
-  import PlayerMatchingSection from '$lib/components/PlayerMatchingSection.svelte';
-  import FabMenu from '$lib/components/FabMenu.svelte';
-  import CreateTableModal from '$lib/components/modals/CreateTableModal.svelte';
-  import AddSparePlayerModal from '$lib/components/modals/AddSparePlayerModal.svelte';
-  import EditTableModal from '$lib/components/modals/EditTableModal.svelte';
-  import AddPlayerModal from '$lib/components/modals/AddPlayerModal.svelte';
-  import DeleteTableModal from '$lib/components/modals/DeleteTableModal.svelte';
-  import DeletePlayerModal from '$lib/components/modals/DeletePlayerModal.svelte';
-  import DetailTableModal from '$lib/components/modals/DetailTableModal.svelte';
-  import DetailPlayerModal from '$lib/components/modals/DetailPlayerModal.svelte';
-  import EditPlayerModal from '$lib/components/modals/EditPlayerModal.svelte';
-  import NightDatePicker from '$lib/components/NightDatePicker.svelte';
+  import AuthHeader from './home/AuthHeader.svelte';
+  import TablesSection from './home/TablesSection.svelte';
+  import PlayerMatchingSection from './home/PlayerMatchingSection.svelte';
+  import FabMenu from './home/FabMenu.svelte';
+  import CreateTableModal from './home/modals/CreateTableModal.svelte';
+  import AddSparePlayerModal from './home/modals/AddSparePlayerModal.svelte';
+  import EditTableModal from './home/modals/EditTableModal.svelte';
+  import AddPlayerModal from './home/modals/AddPlayerModal.svelte';
+  import DeleteTableModal from './home/modals/DeleteTableModal.svelte';
+  import DeletePlayerModal from './home/modals/DeletePlayerModal.svelte';
+  import DetailTableModal from './home/modals/DetailTableModal.svelte';
+  import DetailPlayerModal from './home/modals/DetailPlayerModal.svelte';
+  import EditPlayerModal from './home/modals/EditPlayerModal.svelte';
+  import NightDatePicker from './home/NightDatePicker.svelte';
   import { getDefaultNightDate } from '$lib/utils/date';
-  import { PageStateManager } from '$lib/state/PageStateManager.svelte';
-  import { ActionsManager } from '$lib/state/ActionsManager.svelte';
+  import { PageStateManager } from './home/state/PageStateManager.svelte';
+  import { ActionsManager } from './home/state/ActionsManager.svelte';
 
   const honeypotName = 'website';
-  const props = $props<{ data: PageData }>();
+  const props = $props<{ data: PageData; form?: ActionData }>();
   
   let pageData = $state(props.data);
+  const actionForm = $derived(props.form ?? null);
+
+  const signInError = $derived(
+    actionForm && (actionForm as { form?: string; message?: string }).form === 'signIn'
+      ? ((actionForm as { message?: string }).message ?? null)
+      : null
+  );
+  const isAuthenticated = $derived(Boolean(pageData.authUser));
 
   // Initialize state manager
   const stateManager = new PageStateManager(props.data.nightDate ?? getDefaultNightDate());
@@ -45,10 +55,14 @@
     if (res.ok) {
       const result = deserialize(await res.text());
       if (result?.type === 'success' && result.data) {
-        const nextData = result.data as PageData;
-        pageData = nextData;
-        stateManager.updateNightDate(nextData.nightDate);
-        stateManager.updateData({ tables: nextData.tables, sparePlayers: nextData.sparePlayers });
+        const nextData = result.data as Partial<PageData>;
+        const mergedData = { ...pageData, ...nextData } as PageData;
+        pageData = mergedData;
+        stateManager.updateNightDate(mergedData.nightDate);
+        stateManager.updateData({
+          tables: mergedData.tables,
+          sparePlayers: mergedData.sparePlayers
+        });
       }
     }
   };
@@ -74,9 +88,25 @@
       ? pageData.tables.find((table: Table) => table.id === stateManager.editPlayerModal.data!.tableId) ?? null
       : null
   );
+
+  const canManagePlayer = (player: Player) => {
+    const authUser = pageData.authUser;
+    if (!authUser) return false;
+    if (authUser.isAdmin) return true;
+    return Boolean(player.userId && player.userId === authUser.id);
+  };
+
+  const handleOpenPlayerDetails = (tableId: string, player: Player) => {
+    if (canManagePlayer(player)) {
+      stateManager.editPlayerModal.open(tableId, player);
+      return;
+    }
+
+    stateManager.detailPlayerModal.open(tableId, player);
+  };
 </script>
 
-<main class="w-full min-h-screen bg-base-200 space-y-4 sm:space-y-8 px-2 py-4 sm:px-4 sm:py-8 overflow-x-hidden">
+<main class="w-full min-h-screen bg-base-200 px-2 py-4 sm:px-4 sm:py-8 overflow-x-hidden">
   <header class="border-b border-base-300 bg-base-200">
 
     <div class="flex w-full flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
@@ -95,33 +125,48 @@
           <h1 class="card-title text-3xl">Trova un tavolo per giocare!</h1>
         </div>
       </div>
-      <NightDatePicker
-        zIndex={stateManager.baseZIndex + 1}
-        nightDate={stateManager.nightDate}
-        {honeypotName}
-        selected={(date: string) => {
-          stateManager.updateNightDate(date);
-          void actions.handleNightDateSelected(date);
-        }}
-      />
+      <div class="flex items-center gap-2">
+        <NightDatePicker
+          zIndex={stateManager.baseZIndex + 1}
+          nightDate={stateManager.nightDate}
+          {honeypotName}
+          selected={(date: string) => {
+            stateManager.updateNightDate(date);
+            void actions.handleNightDateSelected(date);
+          }}
+        />
+        <AuthHeader authUser={pageData.authUser ?? null} {honeypotName} signInError={signInError} />
+      </div>
     </div>
   </header>
 
   {#if pageData.databaseError}
-    <div class="alert alert-error shadow-sm">
-      <span>{pageData.databaseError}</span>
-    </div>
-
-    <section class="card bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h2 class="card-title">Modalita offline</h2>
-        <p>I dati dei tavoli non sono disponibili finche la connessione al database non viene ripristinata.</p>
+    <div class="mt-4 sm:mt-8 space-y-4 sm:space-y-6">
+      <div class="alert alert-error shadow-sm">
+        <span>{pageData.databaseError}</span>
       </div>
-    </section>
+
+      <section class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title">Modalita offline</h2>
+          <p>I dati dei tavoli non sono disponibili finche la connessione al database non viene ripristinata.</p>
+        </div>
+      </section>
+    </div>
   {:else}
-    <div class="grid gap-3 sm:gap-6 grid-cols-1">
+    {#if !isAuthenticated}
+      <div class="mt-4 sm:mt-8">
+        <div class="alert alert-info shadow-sm">
+          <span>Puoi vedere i tavoli senza login. Accedi con GUID per aggiungere, modificare o eliminare dati.</span>
+        </div>
+      </div>
+    {/if}
+
+    <div class={`grid gap-0 sm:gap-1 grid-cols-1 ${!isAuthenticated ? 'mt-4 sm:mt-6' : ''}`}>
       <TablesSection
         tables={pageData.tables}
+        authUser={pageData.authUser ?? null}
+        canMutate={isAuthenticated}
         baseZIndex={stateManager.baseZIndex}
         focusedTableId={stateManager.focusedTableId}
         onAddPlayer={stateManager.addPlayerModal.open}
@@ -130,21 +175,25 @@
         onEditTable={stateManager.editTableModal.open}
         onExpandTable={stateManager.detailTableModal.open}
         onDeletePlayer={stateManager.deletePlayerModal.open}
-        onOpenDetailPlayer={stateManager.editPlayerModal.open}
+        onOpenDetailPlayer={handleOpenPlayerDetails}
       />
-      <PlayerMatchingSection
-        weights={pageData.weights}
-        sparePlayers={pageData.sparePlayers}
-        baseZIndex={stateManager.baseZIndex}
-        {honeypotName}
-        nightDate={stateManager.nightDate}
-        reload={() => reloadData(stateManager.nightDate)}
-      />
+      <div class="-mt-1 sm:-mt-2">
+        <PlayerMatchingSection
+          weights={pageData.weights}
+          sparePlayers={pageData.sparePlayers}
+          authUser={pageData.authUser ?? null}
+          canMutate={isAuthenticated}
+          baseZIndex={stateManager.baseZIndex}
+          {honeypotName}
+          nightDate={stateManager.nightDate}
+          reload={() => reloadData(stateManager.nightDate)}
+        />
+      </div>
     </div>
   {/if}
 </main>
 
-{#if !pageData.databaseError}
+{#if !pageData.databaseError && isAuthenticated}
   <FabMenu
     open={stateManager.fabMenu.isOpen}
     zIndex={stateManager.baseZIndex + 1}
@@ -210,18 +259,6 @@
     deleted={(tableId: string) => actions.handleTableDeleted(tableId, stateManager.nightDate)}
   />
 
-  <DetailTableModal
-    open={!!selectedTableDetails}
-    zIndex={stateManager.baseZIndex + 2}
-    table={selectedTableDetails}
-    close={stateManager.detailTableModal.close}
-    onAddPlayer={stateManager.addPlayerModal.open}
-    onDeleteTable={stateManager.deleteTableModal.open}
-    onEditTable={stateManager.editTableModal.open}
-    onDeletePlayer={stateManager.deletePlayerModal.open}
-    onOpenDetailPlayer={stateManager.editPlayerModal.open}
-  />
-
   <!-- PLAYER MODALS -->
 
   <AddPlayerModal
@@ -229,6 +266,7 @@
     zIndex={stateManager.baseZIndex + 2}
     {honeypotName}
     table={stateManager.addPlayerModal.table}
+    authUser={pageData.authUser ?? null}
     close={stateManager.addPlayerModal.close}
     added={(table: Table) => actions.handlePlayerAdded(table, stateManager.nightDate)}
   />
@@ -241,19 +279,6 @@
     close={stateManager.deletePlayerModal.close}
     deleted={(table: Table) => actions.handlePlayerDeleted(table, stateManager.nightDate)}
   />
-
-  {#if stateManager.detailPlayerModal.data && detailPlayerTable}
-    <DetailPlayerModal
-      player={stateManager.detailPlayerModal.data.player}
-      open={true}
-      zIndex={stateManager.baseZIndex + 2}
-      players={detailPlayerTable.players}
-      tableId={stateManager.detailPlayerModal.data.tableId}
-      close={stateManager.detailPlayerModal.close}
-      saved={(player: Player) => actions.handleSavePlayer(stateManager.detailPlayerModal.data!.tableId, player, stateManager.nightDate)}
-      deleted={actions.handleDetailPlayerDeleted}
-    />
-  {/if}
 
   {#if stateManager.editPlayerModal.data && editPlayerTable}
     <EditPlayerModal
@@ -272,6 +297,38 @@
           stateManager.deletePlayerModal.open(tableId, player.id, player.name);
         }
       }}
+    />
+  {/if}
+{/if}
+
+{#if !pageData.databaseError}
+
+  <DetailTableModal
+    open={!!selectedTableDetails}
+    zIndex={stateManager.baseZIndex + 2}
+    canMutate={isAuthenticated}
+    authUser={pageData.authUser ?? null}
+    table={selectedTableDetails}
+    close={stateManager.detailTableModal.close}
+    onAddPlayer={stateManager.addPlayerModal.open}
+    onDeleteTable={stateManager.deleteTableModal.open}
+    onEditTable={stateManager.editTableModal.open}
+    onDeletePlayer={stateManager.deletePlayerModal.open}
+    onOpenDetailPlayer={handleOpenPlayerDetails}
+  />
+
+  {#if stateManager.detailPlayerModal.data && detailPlayerTable}
+    <DetailPlayerModal
+      player={stateManager.detailPlayerModal.data.player}
+      open={true}
+      zIndex={stateManager.baseZIndex + 2}
+      canMutate={isAuthenticated}
+      authUser={pageData.authUser ?? null}
+      players={detailPlayerTable.players}
+      tableId={stateManager.detailPlayerModal.data.tableId}
+      close={stateManager.detailPlayerModal.close}
+      saved={(player: Player) => actions.handleSavePlayer(stateManager.detailPlayerModal.data!.tableId, player, stateManager.nightDate)}
+      deleted={actions.handleDetailPlayerDeleted}
     />
   {/if}
 {/if}

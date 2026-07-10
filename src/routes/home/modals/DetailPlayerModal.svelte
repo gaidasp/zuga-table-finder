@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Player } from '$lib/types';
+  import type { AuthUser, Player } from '$lib/types';
   import { PencilSimpleIcon, XIcon } from 'phosphor-svelte';
   import EditPlayerModal from './EditPlayerModal.svelte';
 
@@ -22,6 +22,8 @@
     player = null,
     open = false,
     zIndex = 0,
+    canMutate = false,
+    authUser = null as AuthUser | null,
     players = [] as Player[],
     tableId = null,
     close,
@@ -50,6 +52,15 @@
     editModal.close();
   };
 
+  const canManagePlayer = $derived.by(() =>
+    Boolean(
+      canMutate &&
+        player &&
+        authUser?.id &&
+        (authUser.isAdmin || (player.userId ? authUser.id === player.userId : false))
+    )
+  );
+
 </script>
 
 {#if open && player}
@@ -59,14 +70,16 @@
         <div class="flex items-center justify-between gap-2 p-4">
           <h3 class="card-title text-base px-2">{player.name}</h3>
           <div class="flex items-center gap-1 shrink-0">
-            <button
-              class="btn btn-sm btn-ghost"
-              aria-label="Modifica giocatore"
-              onclick={() => editModal.open(player)}
-              type="button"
-            >
-              <PencilSimpleIcon size={18} weight="bold" aria-hidden="true" />
-            </button>
+            {#if canManagePlayer}
+              <button
+                class="btn btn-sm btn-ghost"
+                aria-label="Modifica giocatore"
+                onclick={() => editModal.open(player)}
+                type="button"
+              >
+                <PencilSimpleIcon size={18} weight="bold" aria-hidden="true" />
+              </button>
+            {/if}
             <button
               class="btn btn-sm btn-ghost"
               aria-label="Chiudi dettagli"
@@ -104,7 +117,7 @@
   </dialog>
 {/if}
 
-{#if editModal.isOpen && editModal.player}
+{#if canManagePlayer && editModal.isOpen && editModal.player}
   <EditPlayerModal
     bind:player={editModal.player}
     open={editModal.isOpen}

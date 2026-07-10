@@ -187,9 +187,8 @@ describe('Complete User Interaction Flows', () => {
     it('should prevent duplicate spare players with same name, weight, and nightDate', () => {
       const nightDate = '2026-02-15';
       const weight: GameWeight = 'Medio (1-2h)';
-      const name = 'Alice';
 
-      let sparePlayers: SparePlayer[] = [
+      const sparePlayers: SparePlayer[] = [
         {
           id: 'sp-1',
           name: 'Alice',

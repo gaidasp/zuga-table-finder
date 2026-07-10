@@ -16,7 +16,7 @@
     {#if open}
       <div class="flex flex-col items-end gap-2 animate-in slide-in-from-bottom-4 fade-in duration-200">
         <button
-          class="btn btn-circle btn-primary shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 delay-75 hover:scale-120 transition-transform"
+          class="btn btn-circle btn-primary aspect-square shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 delay-75 hover:scale-120 transition-transform"
           type="button"
           aria-label="Aggiungi giocatore in lista"
           onclick={onSpare}
@@ -24,7 +24,7 @@
           <UserIcon size={22} weight="bold" aria-hidden="true" />
         </button>
         <button
-          class="btn btn-circle btn-primary shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 hover:scale-120 transition-transform"
+          class="btn btn-circle btn-primary aspect-square shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 hover:scale-120 transition-transform"
           type="button"
           aria-label="Nuovo tavolo"
           onclick={onCreate}
@@ -42,7 +42,7 @@
 
     <button
       type="button"
-      class="btn btn-lg btn-circle btn-primary shadow-lg hover:scale-120 focus:scale-110 transition-all text-2xl {open ? 'rotate-45' : ''}"
+      class="btn btn-lg btn-circle btn-primary aspect-square shadow-lg hover:scale-120 focus:scale-110 transition-all text-2xl {open ? 'rotate-45' : ''}"
       aria-label="Apri azioni tavoli"
       aria-expanded={open}
       onclick={onToggle}

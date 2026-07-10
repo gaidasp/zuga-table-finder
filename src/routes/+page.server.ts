@@ -1,5 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import {
   addSparePlayer,
   createTable,
@@ -12,8 +13,16 @@ import {
   listTables,
   updateTable,
   getDefaultNightDate,
+  getSparePlayerById,
   getTableById
 } from '$server/data';
+import {
+  authenticateWithGuid,
+  createSession,
+  revokeSession,
+  SESSION_COOKIE_MAX_AGE,
+  SESSION_COOKIE_NAME
+} from '$server/auth';
 import type { GameWeight, Table, BGGGame } from '$lib/types';
 
 
@@ -23,6 +32,7 @@ const DESC_LIMIT = 240;
 const HONEYPOT_FIELD = 'website';
 const WEIGHTS: GameWeight[] = ['Party', 'Leggero (max 45 min)', 'Medio (1-2h)', 'Estremo (>2h)'];
 const DATABASE_ERROR_MESSAGE = 'Database non disponibile al momento. Riprova piu tardi o verifica la configurazione MongoDB.';
+const AUTH_REQUIRED_MESSAGE = 'Effettua il login per modificare dati.';
 
 const sanitizeNightDate = (value: unknown) => {
   if (typeof value !== 'string') return '';
@@ -30,7 +40,7 @@ const sanitizeNightDate = (value: unknown) => {
 };
 
 const isDatabaseError = (error: unknown) =>
-  error instanceof Error && /(ENOTFOUND|ECONNREFUSED|Mongo|querySrv|MONGODB_URI)/i.test(error.message);
+  error instanceof Error && /(ENOTFOUND|ECONNREFUSED|Mongo|querySrv|MONGODB_URI|MONGO_URI)/i.test(error.message);
 
 const buildFallbackPageData = (nightDate: string) => ({
   tables: [] as Table[],
@@ -73,6 +83,28 @@ const buildPageData = async (nightDateInput?: string) => {
 const clean = (value: FormDataEntryValue | null, limit: number) =>
   (value?.toString().trim() ?? '').slice(0, limit);
 
+const requireAuthenticated = (locals: App.Locals, form: string) => {
+  if (!locals.user) {
+    return fail(401, { message: AUTH_REQUIRED_MESSAGE, form, unauthorized: true });
+  }
+
+  return null;
+};
+
+const getNicknameForJoin = (locals: App.Locals, form: string) => {
+  const nickname = clean(locals.user?.nickname ?? '', NAME_LIMIT);
+  if (nickname.length < 2) {
+    return fail(400, {
+      message: 'Imposta prima un nickname nel profilo per unirti a tavoli o liste.',
+      form
+    });
+  }
+
+  return nickname;
+};
+
+const isAdminUser = (locals: App.Locals) => Boolean(locals.user?.isAdmin);
+
 
 
 export const load: PageServerLoad = async () => buildPageData();
@@ -85,8 +117,52 @@ export const actions: Actions = {
     return payload;
   },
 
-  createTable: async ({ request }) => {
+  signIn: async ({ request, cookies }) => {
     try {
+      const data = await request.formData();
+      if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato', form: 'signIn' });
+
+      const guid = clean(data.get('guid'), 128);
+      if (guid.length < 8) {
+        return fail(400, { message: 'Inserisci un codice valido', form: 'signIn' });
+      }
+
+      const user = await authenticateWithGuid(guid);
+      if (!user) {
+        return fail(401, { message: 'Codice non valido', form: 'signIn' });
+      }
+
+      const session = await createSession(user.id);
+      cookies.set(SESSION_COOKIE_NAME, session.token, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: !dev,
+        maxAge: SESSION_COOKIE_MAX_AGE
+      });
+
+      throw redirect(303, '/');
+    } catch (error) {
+      return handleDatabaseActionError(error, 'signIn');
+    }
+  },
+
+  signOut: async ({ cookies }) => {
+    try {
+      const sessionToken = cookies.get(SESSION_COOKIE_NAME);
+      await revokeSession(sessionToken);
+      cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+      throw redirect(303, '/');
+    } catch (error) {
+      return handleDatabaseActionError(error, 'signOut');
+    }
+  },
+
+  createTable: async ({ request, locals }) => {
+    try {
+      const authFailure = requireAuthenticated(locals, 'create');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
@@ -121,15 +197,26 @@ export const actions: Actions = {
       if (duplicate) return fail(400, { message: 'Esiste già un tavolo con lo stesso nome per questa serata. Inserisci un nome diverso.', form: 'create' });
 
       const weight = weightRaw as (typeof WEIGHTS)[number];
-      const createdTable = await createTable({ title, description, seats, weight, nightDate: nightDate, bggGame });
+      const createdTable = await createTable({
+        title,
+        description,
+        seats,
+        weight,
+        creatorUserId: locals.user?.id,
+        nightDate: nightDate,
+        bggGame
+      });
       return { success: true, form: 'create', table: createdTable as Table };
     } catch (error) {
       return handleDatabaseActionError(error, 'create');
     }
   },
 
-  updateTable: async ({ request }) => {
+  updateTable: async ({ request, locals }) => {
     try {
+      const authFailure = requireAuthenticated(locals, 'update');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
@@ -163,6 +250,15 @@ export const actions: Actions = {
       const existingTable = await getTableById(tableId);
       if (!existingTable) return fail(404, { message: 'Tavolo non trovato', form: 'update' });
 
+      if (!existingTable.creatorUserId || existingTable.creatorUserId !== locals.user?.id) {
+        if (!isAdminUser(locals)) {
+          return fail(403, {
+            message: 'Solo il creatore del tavolo o un admin può modificarlo.',
+            form: 'update'
+          });
+        }
+      }
+
       const tablesForNight = await listTables(existingTable.nightDate);
       const duplicateTitle = tablesForNight.some(t => t.id !== tableId && t.title.trim().toLowerCase() === title.trim().toLowerCase());
       if (duplicateTitle) {
@@ -180,29 +276,34 @@ export const actions: Actions = {
     }
   },
 
-  updatePlayer: async ({ request }) => {
+  updatePlayer: async ({ request, locals }) => {
     try {
+      const authFailure = requireAuthenticated(locals, 'updatePlayer');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
       const tableId = clean(data.get('tableId'), 128);
       const playerId = clean(data.get('playerId'), 128);
-      const name = clean(data.get('name'), NAME_LIMIT);
       const isBeginner = data.get('isBeginner') !== null;
       const isTeacher = data.get('isTeacher') !== null;
 
-      if (name.length < 2) {
-        return fail(400, { message: 'Inserisci il nome del giocatore', form: 'updatePlayer' });
-      }
-      // Prevent duplicate names on the same table (exclude the player being edited)
-      // just load the table with the given tableId and check if any other player has the same name, if so return error
       const tableForCheck = await getTableById(tableId);
       if (!tableForCheck) return fail(404, { message: 'Tavolo non trovato :( Forse qualcuno l\'ha cancellato nel frattempo', form: 'updatePlayer' });
-      const normalized = name.trim().toLowerCase();
-      const duplicate = tableForCheck.players.some((p) => p.id !== playerId && p.name.trim().toLowerCase() === normalized);
-      if (duplicate) return fail(400, { message: 'Nome già presente nel tavolo. Usa il tuo nickname!', form: 'updatePlayer' });
+      const targetPlayer = tableForCheck.players.find((player) => player.id === playerId);
+      if (!targetPlayer) return fail(404, { message: 'Giocatore non trovato', form: 'updatePlayer' });
 
-      const table = await updatePlayer(tableId, { id: playerId, name, isBeginner, isTeacher });
+      const canManageTargetPlayer =
+        isAdminUser(locals) || Boolean(targetPlayer.userId && targetPlayer.userId === locals.user?.id);
+      if (!canManageTargetPlayer) {
+        return fail(403, {
+          message: 'Puoi modificare solo il tuo giocatore. Gli admin possono modificare tutti.',
+          form: 'updatePlayer'
+        });
+      }
+
+      const table = await updatePlayer(tableId, { id: playerId, isBeginner, isTeacher });
       if (!table) return fail(404, { message: 'Errore nella modifica del giocatore.', form: 'updatePlayer' });
       
       return { success: true, form: 'updatePlayer', table: table as Table };
@@ -211,20 +312,29 @@ export const actions: Actions = {
     }
   },
 
-  joinTable: async ({ request }) => {
+  joinTable: async ({ request, locals }) => {
     try {
+      const authFailure = requireAuthenticated(locals, 'joinTable');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
       const tableId = clean(data.get('tableId'), 128);
       const name = clean(data.get('name'), NAME_LIMIT);
+      if (name.length < 2) {
+        return fail(400, { message: 'Inserisci un nome valido (almeno 2 caratteri).', form: 'joinTable' });
+      }
       const nightDate = clean(data.get('nightDate'), 32);
       const isBeginner = data.get('isBeginner') !== null;
       const isTeacher = data.get('isTeacher') !== null;
-      
-      if (name.length < 2) {
-        return fail(400, { message: 'Inserisci il tuo nome', form: 'joinTable' });
-      }
+
+      const ownNickname = clean(locals.user?.nickname ?? '', NAME_LIMIT);
+      const isOwnProfilePlayer =
+        ownNickname.length > 0 && ownNickname.trim().toLowerCase() === name.trim().toLowerCase();
+      const linkedUserId = isOwnProfilePlayer ? locals.user?.id : undefined;
+      const linkedAvatarColor = isOwnProfilePlayer ? locals.user?.avatarColor : undefined;
+
       let table = await listTables(nightDate).then(tables => tables.find(t => t.id === tableId));
       
       if (!table) {
@@ -235,7 +345,7 @@ export const actions: Actions = {
       const duplicate = table.players.some((p) => p.name.trim().toLowerCase() === normalized);
       if (duplicate) return fail(400, { message: 'Nome già presente nel tavolo. Usa il tuo nickname!', form: 'joinTable' });
       
-      table = await joinTable(tableId, name, isBeginner, isTeacher);
+      table = await joinTable(tableId, name, linkedUserId, linkedAvatarColor, isBeginner, isTeacher);
       if (!table) {
         return fail(404, { message: 'Tavolo non trovato', form: 'joinTable' });
       }
@@ -245,21 +355,22 @@ export const actions: Actions = {
     }
   },
 
-  joinCategory: async ({ request }) => {
+  joinCategory: async ({ request, locals }) => {
     try {
+      const authFailure = requireAuthenticated(locals, 'joinCategory');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
       const weightRaw = clean(data.get('weight'), 64);
-      const name = clean(data.get('name'), NAME_LIMIT);
+      const nameOrFailure = getNicknameForJoin(locals, 'joinCategory');
+      if (typeof nameOrFailure !== 'string') return nameOrFailure;
+      const name = nameOrFailure;
       const nightDate = clean(data.get('nightDate'), 32);
       const createdAt = Date.now();
       if (!WEIGHTS.includes(weightRaw as (typeof WEIGHTS)[number])) {
         return fail(400, { message: 'Scegli il peso preferito', form: 'joinCategory' });
-      }
-
-      if (name.length < 2) {
-        return fail(400, { message: 'Inserisci il tuo nome', form: 'joinCategory' });
       }
 
       // Check if spare player with same name, weight, and nightDate already exists
@@ -276,19 +387,37 @@ export const actions: Actions = {
         });
       }
 
-      await addSparePlayer(weight, name, nightDate);
-      return { success: true, form: 'joinCategory', sparePlayer: { name, weight, nightDate, createdAt } };
+      await addSparePlayer(weight, name, locals.user?.id, locals.user?.avatarColor, nightDate);
+      return {
+        success: true,
+        form: 'joinCategory',
+        sparePlayer: { name, avatarColor: locals.user?.avatarColor, weight, nightDate, createdAt }
+      };
     } catch (error) {
       return handleDatabaseActionError(error, 'joinCategory');
     }
   },
 
-  deleteTable: async ({ request }) => {
+  deleteTable: async ({ request, locals }) => {
     try {
+      const authFailure = requireAuthenticated(locals, 'deleteTable');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
       const tableId = clean(data.get('tableId'), 128);
+      const table = await getTableById(tableId);
+      if (!table) return fail(404, { message: 'Tavolo non trovato', form: 'deleteTable' });
+      if (!table.creatorUserId || table.creatorUserId !== locals.user?.id) {
+        if (!isAdminUser(locals)) {
+          return fail(403, {
+            message: 'Solo il creatore del tavolo o un admin può eliminarlo.',
+            form: 'deleteTable'
+          });
+        }
+      }
+
       const ok = await deleteTable(tableId);
       if (!ok) return fail(404, { message: 'Tavolo non trovato', form: 'deleteTable' });
       return { success: true, form: 'deleteTable', tableId: tableId as string };
@@ -297,13 +426,31 @@ export const actions: Actions = {
     }
   },
 
-  deletePlayer: async ({ request }) => {
+  deletePlayer: async ({ request, locals }) => {
     try {
+      const authFailure = requireAuthenticated(locals, 'deletePlayer');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
       const tableId = clean(data.get('tableId'), 128);
       const playerId = clean(data.get('playerId'), 128);
+      const tableBeforeDelete = await getTableById(tableId);
+      if (!tableBeforeDelete) return fail(404, { message: 'Tavolo non trovato', form: 'deletePlayer' });
+
+      const targetPlayer = tableBeforeDelete.players.find((player) => player.id === playerId);
+      if (!targetPlayer) return fail(404, { message: 'Giocatore non trovato', form: 'deletePlayer' });
+
+      const canDeleteTargetPlayer =
+        isAdminUser(locals) || Boolean(targetPlayer.userId && targetPlayer.userId === locals.user?.id);
+      if (!canDeleteTargetPlayer) {
+        return fail(403, {
+          message: 'Puoi rimuovere solo il tuo nome dal tavolo. Gli admin possono rimuovere tutti.',
+          form: 'deletePlayer'
+        });
+      }
+
       const table = await deletePlayer(tableId, playerId);
       if (!table) return fail(404, { message: 'Giocatore o tavolo non trovato', form: 'deletePlayer' });
       return { success: true, form: 'deletePlayer', table: table as Table };
@@ -312,12 +459,27 @@ export const actions: Actions = {
     }
   },
 
-  deleteSparePlayer: async ({ request }) => {
+  deleteSparePlayer: async ({ request, locals }) => {
     try {
+      const authFailure = requireAuthenticated(locals, 'deleteSparePlayer');
+      if (authFailure) return authFailure;
+
       const data = await request.formData();
       if (clean(data.get(HONEYPOT_FIELD), 32)) return fail(400, { message: 'Bot rilevato' });
 
       const sparePlayerId = clean(data.get('id'), 128);
+      const sparePlayer = await getSparePlayerById(sparePlayerId);
+      if (!sparePlayer) return fail(404, { message: 'Giocatore non trovato', form: 'deleteSparePlayer' });
+
+      const canDeleteSpare =
+        isAdminUser(locals) || Boolean(sparePlayer.userId && sparePlayer.userId === locals.user?.id);
+      if (!canDeleteSpare) {
+        return fail(403, {
+          message: 'Puoi rimuovere solo il tuo nome dalla lista. Gli admin possono rimuovere tutti.',
+          form: 'deleteSparePlayer'
+        });
+      }
+
       const ok = await deleteSparePlayer(sparePlayerId);
       if (!ok) return fail(404, { message: 'Giocatore non trovato', form: 'deleteSparePlayer' });
       return { success: true, form: 'deleteSparePlayer', sparePlayerId: sparePlayerId as string };

@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import type { Table, GameWeight, BGGGame } from '$lib/types';
   import { ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, XIcon, TrashIcon } from 'phosphor-svelte';
-  import GameSearchInput from '$lib/components/GameSearchInput.svelte';
+  import GameSearchInput from '../GameSearchInput.svelte';
 
 
   let {

@@ -15,9 +15,6 @@
     onDelete
   } = $props() 
 
-  // get original player object before any edits for comparison in validation
-  const originalPlayer = player ? { ...player } : null;
-  
   let errorMsg = $state('');
   $effect(() => {
     if (open) errorMsg = '';
@@ -92,18 +89,16 @@
           <input type="hidden" name="tableId" value={tableId ?? ''} />
           <input type="hidden" name="playerId" value={player.id} />
           <div class="form-control flex flex-col gap-1">
-            <label class="label" for="add-player-name">
-              <span class="label-text">Nome</span>
+            <label class="label" for="player-name-readonly">
+              <span class="label-text">Nickname (dal profilo utente)</span>
             </label>
             <input
-              id="add-player-name"
-              name="name"
+              id="player-name-readonly"
               class="input"
-              bind:value={player.name}
-              maxlength="48"
-              required
-              aria-invalid={errorMsg ? 'true' : 'false'}
+              value={player.name}
+              disabled
             />
+            <p class="text-xs opacity-70">Il nickname si modifica dal profilo, non dalla lista tavolo.</p>
           </div>
           <div class="form-control">
             <label class="label cursor-pointer justify-start gap-2" for="add-player-is-beginner">
