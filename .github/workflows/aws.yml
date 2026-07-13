@@ -19,4 +19,4 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Start build
         id: run
-        run: aws lambda invoke --function-name ${{ vars.AWS_LAMBDA_FUNCTION_NAME }} --payload '{}' response.json
+        run: aws lambda invoke --function-name ${{ secrets.AWS_LAMBDA_FUNCTION_NAME }} --payload '{}' response.json
