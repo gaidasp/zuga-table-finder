@@ -31,6 +31,19 @@ export async function listTables(nightDate?: string): Promise<Table[]> {
   return items.map(mapTable);
 }
 
+export async function listTableNightDates(): Promise<string[]> {
+  const collection = await tableCollection();
+  const rows = await collection
+    .aggregate<{ _id: string }>([
+      { $match: { kind: 'table', nightDate: { $type: 'string', $ne: '' } } },
+      { $group: { _id: '$nightDate' } },
+      { $sort: { _id: 1 } }
+    ])
+    .toArray();
+
+  return rows.map((row) => row._id);
+}
+
 export async function createTable(input: {
   title: string;
   description: string;
@@ -107,12 +120,21 @@ export async function joinTable(
   tableId: string,
   name: string,
   userId: string | undefined,
+  ownerUserId: string | undefined,
   avatarColor: string | undefined,
   isBeginner: boolean,
   isTeacher: boolean
 ): Promise<Table | undefined> {
   const collection = await tableCollection();
-  const newPlayer: Player = { id: randomUUID(), name, userId, avatarColor, isBeginner, isTeacher };
+  const newPlayer: Player = {
+    id: randomUUID(),
+    name,
+    userId,
+    ownerUserId,
+    avatarColor,
+    isBeginner,
+    isTeacher
+  };
 
   await collection.updateOne(
     { _id: tableId, kind: 'table', 'players.name': { $ne: name } },

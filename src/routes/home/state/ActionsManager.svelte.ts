@@ -99,4 +99,19 @@ export class ActionsManager {
   handleNightDateSelected = async (updatedDate: string) => {
     await this.reloadData(updatedDate);
   };
+
+  handleViewOrientationChanged = (orientation: 'vertical' | 'horizontal') => {
+    this.state.setViewOrientation(orientation);
+
+    if (!this.state.authUser) return;
+
+    const form = new FormData();
+    form.set('preferredView', orientation);
+
+    void fetch('?/setPreferredView', {
+      method: 'POST',
+      headers: { accept: 'application/json' },
+      body: form
+    });
+  };
 }

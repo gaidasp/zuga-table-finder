@@ -5,6 +5,8 @@
     UserPlusIcon,
     CaretLeftIcon,
     CaretRightIcon,
+    CaretUpIcon,
+    CaretDownIcon,
     ConfettiIcon,
     FeatherIcon,
     PuzzlePieceIcon,
@@ -12,6 +14,7 @@
     GraduationCapIcon
   } from 'phosphor-svelte';
   import { getPlayerBadgeStyle } from '$lib/utils/player';
+  import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
   import { getAvatarBgClass } from '$lib/utils/avatar';
   import type { Player } from '$lib/types';
   let {
@@ -21,6 +24,7 @@
     canMutate = false,
     tableIndex = 0,
     tableCount = 0,
+    moveOrientation = 'horizontal' as 'horizontal' | 'vertical',
     onAddPlayer,
     onSavePlayer = () => {},
     onDeleteTable,
@@ -47,11 +51,11 @@
     onAddPlayer(table);
   };
 
-  const handleMoveLeft = () => {
+  const handleMovePrevious = () => {
     onMoveTable(table.id, 'left');
   };
 
-  const handleMoveRight = () => {
+  const handleMoveNext = () => {
     onMoveTable(table.id, 'right');
   };
 
@@ -82,7 +86,9 @@
   const canSortTables = $derived.by(() => Boolean(canMutate && authUser?.isAdmin));
 </script>
 
-<article class="card bg-base-100 card-border border-base-300 transition hover:shadow-lg w-full">
+<article
+  class={`card bg-base-100 card-border border-base-300 transition hover:shadow-lg w-full ${table.players.length === table.seats ? 'table-full-striped' : ''}`}
+>
   <div class="border-base-300 ">
     <div class="flex items-center justify-between gap-0 p-2 px-3 pb-2 w-full">
       <button
@@ -95,18 +101,30 @@
           <ConfettiIcon
             size={20}
             weight="fill"
-            class="text-warning pointer-events-none shrink-0"
+            class="pointer-events-none shrink-0"
+            style={getGameWeightColorStyle(table.weight)}
           />
         {:else if table.weight === 'Leggero (max 45 min)'}
-          <FeatherIcon size={20} weight="fill" class="text-info pointer-events-none shrink-0" />
+          <FeatherIcon
+            size={20}
+            weight="fill"
+            class="pointer-events-none shrink-0"
+            style={getGameWeightColorStyle(table.weight)}
+          />
         {:else if table.weight === 'Medio (1-2h)'}
           <PuzzlePieceIcon
             size={20}
             weight="fill"
-            class="text-success pointer-events-none shrink-0"
+            class="pointer-events-none shrink-0"
+            style={getGameWeightColorStyle(table.weight)}
           />
         {:else if table.weight === 'Estremo (>2h)'}
-          <SkullIcon size={20} weight="fill" class="text-error pointer-events-none shrink-0" />
+          <SkullIcon
+            size={20}
+            weight="fill"
+            class="pointer-events-none shrink-0"
+            style={getGameWeightColorStyle(table.weight)}
+          />
         {/if}
         <span class="truncate" style="max-width: 14ch;">{table.title}</span>
       </button>
@@ -148,21 +166,29 @@
         {#if canSortTables}
           <button
             class="btn btn-sm btn-ghost px-0"
-            aria-label="Sposta tavolo a sinistra"
-            onclick={handleMoveLeft}
+            aria-label={moveOrientation === 'vertical' ? 'Sposta tavolo in alto' : 'Sposta tavolo a sinistra'}
+            onclick={handleMovePrevious}
             type="button"
             disabled={tableIndex <= 0}
           >
-            <CaretLeftIcon size={18} weight="bold" aria-hidden="true" />
+            {#if moveOrientation === 'vertical'}
+              <CaretUpIcon size={18} weight="bold" aria-hidden="true" />
+            {:else}
+              <CaretLeftIcon size={18} weight="bold" aria-hidden="true" />
+            {/if}
           </button>
           <button
             class="btn btn-sm btn-ghost px-0"
-            aria-label="Sposta tavolo a destra"
-            onclick={handleMoveRight}
+            aria-label={moveOrientation === 'vertical' ? 'Sposta tavolo in basso' : 'Sposta tavolo a destra'}
+            onclick={handleMoveNext}
             type="button"
             disabled={tableIndex >= tableCount - 1}
           >
-            <CaretRightIcon size={18} weight="bold" aria-hidden="true" />
+            {#if moveOrientation === 'vertical'}
+              <CaretDownIcon size={18} weight="bold" aria-hidden="true" />
+            {:else}
+              <CaretRightIcon size={18} weight="bold" aria-hidden="true" />
+            {/if}
           </button>
         {/if}
       </div>

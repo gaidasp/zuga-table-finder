@@ -4,6 +4,7 @@ export type AuthUser = {
   avatarDataUrl: string | null;
   avatarColor?: string;
   isAdmin: boolean;
+  preferredView: 'vertical' | 'horizontal';
 };
 
 export type AuthUserSummary = AuthUser & {

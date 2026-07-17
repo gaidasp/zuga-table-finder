@@ -57,7 +57,11 @@
       canMutate &&
         player &&
         authUser?.id &&
-        (authUser.isAdmin || (player.userId ? authUser.id === player.userId : false))
+        (
+          authUser.isAdmin ||
+          (player.userId ? authUser.id === player.userId : false) ||
+          (player.ownerUserId ? authUser.id === player.ownerUserId : false)
+        )
     )
   );
 

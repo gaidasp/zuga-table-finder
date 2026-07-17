@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { UserIcon } from 'phosphor-svelte';
+  import { EyeIcon, UserIcon } from 'phosphor-svelte';
 
   let {
     open = false,
     zIndex = 0,
     onToggle ,
     onCreate ,
-    onSpare 
+    onSpare ,
+    onView,
   } = $props() 
 
 </script>
@@ -18,11 +19,20 @@
         <button
           class="btn btn-circle btn-primary aspect-square shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 delay-75 hover:scale-120 transition-transform"
           type="button"
+          aria-label="Visualizza"
+          onclick={onView}
+        >
+          <EyeIcon size={22} weight="bold" aria-hidden="true" />
+        </button>
+        <button
+          class="btn btn-circle btn-primary aspect-square shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 delay-75 hover:scale-120 transition-transform"
+          type="button"
           aria-label="Aggiungi giocatore in lista"
           onclick={onSpare}
         >
           <UserIcon size={22} weight="bold" aria-hidden="true" />
         </button>
+        
         <button
           class="btn btn-circle btn-primary aspect-square shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 hover:scale-120 transition-transform"
           type="button"

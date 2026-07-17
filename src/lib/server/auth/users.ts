@@ -22,52 +22,53 @@ export const validateAdminMasterCode = (input: string | null | undefined) => {
   return normalizeCode(input) === expected;
 };
 
-export const createUserWithGuid = async (input?: {
+export const createUserWithCode = async (input?: {
   nickname?: string | null;
   isAdmin?: boolean;
-}): Promise<{ user: AuthUser; guid: string }> => {
+}): Promise<{ user: AuthUser; code: string }> => {
   const collection = await authCollection();
-  let guid = randomUUID();
+  let code = randomUUID();
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const exists = await collection.findOne({ kind: 'user', guid });
+    const exists = await collection.findOne({ kind: 'user', code });
     if (!exists) break;
-    guid = randomUUID();
+    code = randomUUID();
   }
 
   const now = Date.now();
   const userDoc: UserDoc = {
     _id: randomUUID(),
     kind: 'user',
-    guid,
+    code,
     avatarColor: getRandomAvatarBgClass(),
     nickname: cleanNickname(input?.nickname),
     avatarDataUrl: null,
     isAdmin: Boolean(input?.isAdmin),
     createdAt: now,
     updatedAt: now,
-    lastLoginAt: null
+    lastLoginAt: null,
+    preferredView: 'vertical',
   };
 
   await collection.insertOne(userDoc);
 
   return {
     user: toAuthUser(userDoc),
-    guid
+    code
   };
 };
 
-export const authenticateWithGuid = async (guidInput: string): Promise<AuthUser | null> => {
-  const guid = normalizeCode(guidInput);
-  if (!guid) return null;
+export const authenticateWithCode = async (codeInput: string): Promise<AuthUser | null> => {
+  const code = normalizeCode(codeInput);
+  if (!code) return null;
 
   const collection = await authCollection();
-  const plainGuidMatch = toUserDoc(await collection.findOne({ kind: 'user', guid }));
-  const codeHash = hashValue(guid);
+  const plainCodeMatch = toUserDoc(await collection.findOne({ kind: 'user', code }));
+  const codeHash = hashValue(code);
   const legacyHashedMatch = toUserDoc(
-    await collection.findOne({ kind: 'user', codeHash, guid: { $exists: false } })
+    await collection.findOne({ kind: 'user', codeHash, code: { $exists: false } })
   );
-  const doc = plainGuidMatch ?? legacyHashedMatch;
+  const doc = plainCodeMatch ?? legacyHashedMatch;
   if (!doc) return null;
 
   const now = Date.now();
@@ -103,7 +104,7 @@ export const updateManagedUser = async (
   input: {
     nickname?: string | null;
     isAdmin?: boolean;
-    guid?: string | null;
+    code?: string | null;
   }
 ): Promise<AuthUserSummary | null> => {
   const collection = await authCollection();
@@ -120,18 +121,18 @@ export const updateManagedUser = async (
     set.isAdmin = Boolean(input.isAdmin);
   }
 
-  if (input.guid !== undefined) {
-    const guid = normalizeGuid(input.guid);
-    if (!guid) {
+  if (input.code !== undefined) {
+    const code = normalizeGuid(input.code);
+    if (!code) {
       throw new Error('GUID_INVALID');
     }
 
-    const existingWithGuid = await collection.findOne({ kind: 'user', guid });
+    const existingWithGuid = await collection.findOne({ kind: 'user', code });
     if (existingWithGuid && typeof existingWithGuid._id === 'string' && existingWithGuid._id !== userId) {
       throw new Error('GUID_ALREADY_IN_USE');
     }
 
-    set.guid = guid;
+    set.code = code;
   }
 
   const result = await collection.findOneAndUpdate(
@@ -193,3 +194,20 @@ export const updateUserProfile = async (
 
 export const removeUserAvatar = async (userId: string): Promise<AuthUser | null> =>
   updateUserProfile(userId, { avatarDataUrl: null });
+
+export const updateUserPreferredView = async (
+  userId: string,
+  preferredView: 'vertical' | 'horizontal'
+): Promise<AuthUser | null> => {
+  const collection = await authCollection();
+  const now = Date.now();
+
+  const result = await collection.findOneAndUpdate(
+    { _id: userId, kind: 'user' },
+    { $set: { preferredView, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+
+  const userDoc = toUserDoc(result);
+  return userDoc ? toAuthUser(userDoc) : null;
+};

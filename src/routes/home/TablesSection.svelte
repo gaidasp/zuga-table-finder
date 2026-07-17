@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AuthUser, Table } from '$lib/types';
+  import { getGameWeightColorVar } from '$lib/utils/tableWeight';
   import TableCard from './TableCard.svelte';
 
   let {
@@ -18,7 +19,47 @@
     onOpenDetailPlayer
   } = $props();
 
+  let carouselEl = $state<HTMLDivElement | null>(null);
+  let activeTableId = $state<string | null>(null);
+  let syncRaf = 0;
+
   const orderedTables = $derived([...tables]);
+
+  function syncActiveFromScroll() {
+    if (!carouselEl || orderedTables.length === 0) return;
+
+    const containerRect = carouselEl.getBoundingClientRect();
+    const containerCenter = containerRect.left + containerRect.width / 2;
+
+    let closestIndex = -1;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    for (let index = 0; index < orderedTables.length; index += 1) {
+      const element = document.getElementById(`table-${index}`);
+      if (!element) continue;
+
+      const rect = element.getBoundingClientRect();
+      const cardCenter = rect.left + rect.width / 2;
+      const distance = Math.abs(cardCenter - containerCenter);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    }
+
+    if (closestIndex !== -1) {
+      activeTableId = orderedTables[closestIndex]?.id ?? null;
+    }
+  }
+
+  function handleCarouselScroll() {
+    if (syncRaf) cancelAnimationFrame(syncRaf);
+    syncRaf = requestAnimationFrame(() => {
+      syncActiveFromScroll();
+      syncRaf = 0;
+    });
+  }
 
   function scrollToIndex(index: number) {
     requestAnimationFrame(() => {
@@ -29,6 +70,7 @@
 
   $effect(() => {
     if (focusedTableId && tables.length > 3) {
+      activeTableId = focusedTableId;
       const index = orderedTables.findIndex(t => t.id === focusedTableId);
       if (index !== -1) {
         // Double RAF to ensure DOM is fully updated after data reload
@@ -39,6 +81,37 @@
         });
       }
     }
+  });
+
+  $effect(() => {
+    if (tables.length <= 3) {
+      activeTableId = focusedTableId;
+      return;
+    }
+
+    if (focusedTableId && orderedTables.some(table => table.id === focusedTableId)) {
+      activeTableId = focusedTableId;
+      return;
+    }
+
+    if (!activeTableId || !orderedTables.some(table => table.id === activeTableId)) {
+      activeTableId = orderedTables[0]?.id ?? null;
+    }
+  });
+
+  $effect(() => {
+    if (!carouselEl || tables.length <= 3) return;
+
+    requestAnimationFrame(() => {
+      syncActiveFromScroll();
+    });
+
+    return () => {
+      if (syncRaf) {
+        cancelAnimationFrame(syncRaf);
+        syncRaf = 0;
+      }
+    };
   });
 </script>
 
@@ -90,9 +163,17 @@
           {/each}
         </div>
       {:else}
-        <div class="carousel carousel-center w-full space-x-2 px-4 pt-1 pb-1">
+        <div
+          class="carousel carousel-center w-full space-x-2 px-4 pt-1 pb-1"
+          bind:this={carouselEl}
+          onscroll={handleCarouselScroll}
+        >
           {#each orderedTables as table, index (table.id)}
-            <div id="table-{index}" class="carousel-item w-[80vw] xl:w-[30vw] lg:w-[30vw]">
+            <div
+              id="table-{index}"
+              class="carousel-item w-[80vw] xl:w-[30vw] lg:w-[30vw]"
+              data-carousel-item={table.id === activeTableId ? 'active' : undefined}
+            >
               <TableCard
                 {baseZIndex}
                 {canMutate}
@@ -114,8 +195,19 @@
         </div>
         <div class="flex flex-wrap justify-center w-full pt-0 pb-1 gap-2">
           {#each orderedTables as table, index (table.id)}
-            {@const weightColor = table.weight === 'Party' ? 'text-warning' : table.weight === 'Leggero (max 45 min)' ? 'text-info' : table.weight === 'Medio (1-2h)' ? 'text-success' : 'text-error'}
-            <a href="#table-{index}" onclick={e => {e.preventDefault(); scrollToIndex(index);}} class="btn btn-xs {weightColor}" aria-label="Vai al tavolo {index + 1}">{index + 1}</a>
+            <a
+              href="#table-{index}"
+              onclick={e => {
+                e.preventDefault();
+                activeTableId = table.id;
+                scrollToIndex(index);
+              }}
+              class={`btn btn-xs btn-outline transition-all ${table.players.length === table.seats ? 'table-full-striped-indicator' : ''} ${table.id === activeTableId ? 'ring-2 ring-offset-2 ring-offset-base-100 outline outline-2 scale-110' : ''}`}
+              style={`color: var(${getGameWeightColorVar(table.weight)}); border-color: var(${getGameWeightColorVar(table.weight)}); outline-color: var(${getGameWeightColorVar(table.weight)}); --tw-ring-color: var(${getGameWeightColorVar(table.weight)});`}
+              aria-label="Vai al tavolo {index + 1}"
+            >
+              <span>{index + 1}</span>
+            </a>
           {/each}
         </div>
       {/if}

@@ -8,7 +8,7 @@
   let deleteModalOpen = $state(false);
   let selectedUserId = $state('');
   let selectedUserNickname = $state('');
-  let selectedUserGuid = $state('');
+  let selectedUserCode = $state('');
   let selectedUserIsAdmin = $state(false);
 
   const generatedCodes = $derived.by(() => (props.form as { generatedCodes?: string[] } | undefined)?.generatedCodes ?? []);
@@ -19,7 +19,7 @@
   const openEditModal = (user: PageData['users'][number]) => {
     selectedUserId = user.id;
     selectedUserNickname = user.nickname ?? '';
-    selectedUserGuid = user.code;
+    selectedUserCode = user.code;
     selectedUserIsAdmin = user.isAdmin;
     editModalOpen = true;
   };
@@ -195,15 +195,15 @@
           </div>
 
           <div class="form-control flex flex-col gap-1">
-            <label class="label" for="edit-user-guid">GUID</label>
+            <label class="label" for="edit-user-code">CODICE</label>
             <input
-              id="edit-user-guid"
+              id="edit-user-code"
               type="text"
-              name="guid"
+              name="code"
               class="input w-full font-mono"
               maxlength="128"
               minlength="8"
-              bind:value={selectedUserGuid}
+              bind:value={selectedUserCode}
               required
             />
           </div>

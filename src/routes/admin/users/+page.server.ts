@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { error, fail } from '@sveltejs/kit';
 import {
-  createUserWithGuid,
+  createUserWithCode,
   deleteManagedUser,
   listUsers,
   updateManagedUser
@@ -42,22 +42,22 @@ export const actions: Actions = {
       : 1;
     const makeAdmin = data.get('makeAdmin') !== null;
 
-    const created = [] as Array<{ guid: string }>;
+    const created = [] as Array<{ code: string }>;
 
     for (let i = 0; i < requestedCount; i += 1) {
       const nicknameForUser = requestedCount === 1 ? nickname : null;
-      const { guid } = await createUserWithGuid({
+      const { code } = await createUserWithCode({
         nickname: nicknameForUser,
         isAdmin: makeAdmin
       });
-      created.push({ guid });
+      created.push({ code });
     }
 
     return {
       success: true,
       form: 'createUsers',
       message: `${created.length} codice/i creati con successo.`,
-      generatedCodes: created.map((item) => item.guid),
+      generatedCodes: created.map((item) => item.code),
       users: await listUsers()
     };
   },
@@ -68,7 +68,7 @@ export const actions: Actions = {
     const data = await request.formData();
     const userId = clean(data.get('userId'), 128);
     const nickname = clean(data.get('nickname'), NICKNAME_LIMIT);
-    const guid = clean(data.get('guid'), GUID_LIMIT);
+    const code = clean(data.get('code'), GUID_LIMIT);
     const isAdmin = data.get('isAdmin') !== null;
     const usersBefore = await listUsers();
     const targetUser = usersBefore.find((user) => user.id === userId);
@@ -82,13 +82,13 @@ export const actions: Actions = {
       return fail(404, { form: 'editUser', message: 'Utente non trovato.' });
     }
 
-    if (guid.length < 8) {
-      return fail(400, { form: 'editUser', message: 'GUID troppo corto (minimo 8 caratteri).' });
+    if (code.length < 8) {
+      return fail(400, { form: 'editUser', message: 'CODICE troppo corto (minimo 8 caratteri).' });
     }
 
-    const duplicateGuid = usersBefore.find((user) => user.id !== userId && user.code === guid);
+    const duplicateGuid = usersBefore.find((user) => user.id !== userId && user.code === code);
     if (duplicateGuid) {
-      return fail(400, { form: 'editUser', message: 'GUID gia in uso da un altro utente.' });
+      return fail(400, { form: 'editUser', message: 'CODICE gia in uso da un altro utente.' });
     }
 
     if (locals.user?.id === userId && !isAdmin) {
@@ -108,7 +108,7 @@ export const actions: Actions = {
     const updated = await updateManagedUser(userId, {
       nickname,
       isAdmin,
-      guid
+      code
     });
 
     if (!updated) {

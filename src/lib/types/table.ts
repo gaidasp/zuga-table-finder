@@ -1,13 +1,12 @@
 import type { BGGGame } from './bgg';
 
-export type PlayerLevel = 'Richiede spiegazione' | 'Modestamente esperto';
-
 export type GameWeight = 'Party' | 'Leggero (max 45 min)' | 'Medio (1-2h)' | 'Estremo (>2h)';
 
 export type Player = {
   id: string;
   name: string;
   userId?: string;
+  ownerUserId?: string;
   avatarColor?: string;
   isBeginner?: boolean;
   isTeacher?: boolean;
@@ -17,6 +16,7 @@ export type SparePlayer = {
   id: string;
   name: string;
   userId?: string;
+  ownerUserId?: string;
   avatarColor?: string;
   weight: GameWeight;
   nightDate: string;

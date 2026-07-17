@@ -4,7 +4,8 @@
     PencilSimpleIcon,
     TrashIcon,
     XIcon,
-    UserPlusIcon
+    UserPlusIcon,
+    ShareNetworkIcon
   } from 'phosphor-svelte';
   import { getPlayerBadgeStyle } from '$lib/utils/player';
   let {
@@ -53,6 +54,37 @@
     onOpenDetailPlayer(table.id, player);
   };
 
+  let shareFeedback = $state('');
+
+  const handleShareTable = async () => {
+    if (!table) return;
+
+    const sharedUrl = `${window.location.origin}/?nightDate=${encodeURIComponent(table.nightDate)}&tableId=${encodeURIComponent(table.id)}`;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(sharedUrl);
+      } else {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = sharedUrl;
+        tempInput.setAttribute('readonly', '');
+        tempInput.style.position = 'absolute';
+        tempInput.style.left = '-9999px';
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+      }
+      shareFeedback = 'Link copiato';
+    } catch {
+      shareFeedback = 'Impossibile copiare il link';
+    }
+
+    setTimeout(() => {
+      shareFeedback = '';
+    }, 1500);
+  };
+
   const canManageTable = $derived.by(() =>
     Boolean(
       canMutate &&
@@ -62,7 +94,15 @@
   );
 
   const canDeletePlayer = (player: Player) =>
-    Boolean(canMutate && authUser?.id && (authUser.isAdmin || (player.userId ? authUser.id === player.userId : false)));
+    Boolean(
+      canMutate &&
+        authUser?.id &&
+        (
+          authUser.isAdmin ||
+          (player.userId ? authUser.id === player.userId : false) ||
+          (player.ownerUserId ? authUser.id === player.ownerUserId : false)
+        )
+    );
 </script>
 
 {#if open && table}
@@ -75,6 +115,15 @@
         <div class="flex items-center justify-between gap-2 p-4">
           <h3 class="card-title text-base px-2 truncate" style="max-width: 14ch;">{table.title}</h3>
           <div class="flex items-center gap-1 shrink-0">
+            <button
+              class="btn btn-sm btn-ghost"
+              aria-label="Condividi tavolo"
+              onclick={handleShareTable}
+              type="button"
+              title="Copia link tavolo"
+            >
+              <ShareNetworkIcon size={18} weight="bold" aria-hidden="true" />
+            </button>
             {#if canManageTable}
               <button
                 class="btn btn-sm btn-ghost"
@@ -96,6 +145,11 @@
           </div>
         </div>
         <div class="card-body gap-2 pt-4">
+          {#if shareFeedback}
+            <div class="alert alert-info py-2 text-xs">
+              <span>{shareFeedback}</span>
+            </div>
+          {/if}
           <p class="text-sm w-full italic whitespace-pre-wrap break-words">
             {table.description || 'Nessuna descrizione.'}
           </p>

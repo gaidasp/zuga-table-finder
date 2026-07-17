@@ -1,12 +1,8 @@
-import type { Player, Table, GameWeight, SparePlayer, BGGGame } from '$lib/types';
+import type { Player, Table, GameWeight, SparePlayer, BGGGame, AuthUser } from '$lib/types';
 
 // Individual modal state classes following OOP principles
 class FabMenuState {
   isOpen = $state(false);
-
-  open = () => {
-    this.isOpen = true;
-  };
 
   close = () => {
     this.isOpen = false;
@@ -160,6 +156,18 @@ class DeletePlayerModalState {
   };
 }
 
+class LoginModalState {
+  isOpen = $state(false);
+
+  open = () => {
+    this.isOpen = true;
+  };
+
+  close = () => {
+    this.isOpen = false;
+  };
+}
+
 export class PageStateManager {
   // Modal instances
   fabMenu = new FabMenuState();
@@ -172,21 +180,44 @@ export class PageStateManager {
   detailPlayerModal = new DetailPlayerModalState();
   editPlayerModal = new EditPlayerModalState();
   deletePlayerModal = new DeletePlayerModalState();
+  loginModal = new LoginModalState();
+
 
   // Shared state
   baseZIndex = $state(0);
   nightDate = $state('');
+  viewOrientation = $state<'vertical' | 'horizontal'>('vertical');
   focusedTableId = $state<string | null>(null);
   data = $state<{ tables: Table[]; sparePlayers: SparePlayer[] }>({ tables: [], sparePlayers: [] });
+  
+  loggedInUser = $state(false);
+  authUser: AuthUser | null = $state(null);
 
-  constructor(initialNightDate: string) {
+  constructor(initialNightDate: string, initialAuthUser: AuthUser | null = null) {
     this.nightDate = initialNightDate;
+    this.setAuthUser(initialAuthUser);
   }
 
   setFocusedTable(tableId: string | null) {
       this.focusedTableId = tableId;
   }
-    
+  
+  switchOrientation() {
+    this.viewOrientation = this.viewOrientation === 'vertical' ? 'horizontal' : 'vertical';
+    return this.viewOrientation;
+  }
+
+  setViewOrientation(orientation: 'vertical' | 'horizontal') {
+    this.viewOrientation = orientation;
+  }
+  
+  setAuthUser(user: AuthUser | null) {
+    this.authUser = user;
+    this.loggedInUser = Boolean(user);
+    if (user?.preferredView) {
+      this.viewOrientation = user.preferredView;
+    }
+  }
 
   updateNightDate(newDate: string) {
     this.nightDate = newDate;
@@ -194,12 +225,5 @@ export class PageStateManager {
 
   updateData(newData: { tables: Table[]; sparePlayers: SparePlayer[] }) {
     this.data = newData;
-  }
-
-  formatTimestamp(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString('it-IT', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   }
 }

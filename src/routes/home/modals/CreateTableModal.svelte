@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { Confetti, Feather, PuzzlePiece, Skull, X } from 'phosphor-svelte';
   import type { GameWeight, Table, BGGGame } from '$lib/types';
+  import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
   import GameSearchInput from '../GameSearchInput.svelte';
 
   let {
@@ -52,9 +53,27 @@
   let defaultSeats = $state<number | string>(DEFAULT_SEATS);
   let bggGame = $state<BGGGame | null>(null);
   let lastAutofilledBggId = $state<string | null>(null);
+  let wasOpen = $state(false);
+
+  const resetCreateForm = () => {
+    title = '';
+    defaultWeight = DEFAULT_WEIGHT;
+    defaultDescription = '';
+    defaultSeats = DEFAULT_SEATS;
+    bggGame = null;
+    lastAutofilledBggId = null;
+    errorMsg = '';
+  };
 
   $effect(() => {
     if (open) errorMsg = '';
+  });
+
+  $effect(() => {
+    if (open && !wasOpen) {
+      resetCreateForm();
+    }
+    wasOpen = open;
   });
 
   $effect(() => {
@@ -162,7 +181,8 @@
                       ><Confetti
                         size={20}
                         weight="fill"
-                        class="inline-block align-middle text-warning"
+                        class="inline-block align-middle"
+                        style={getGameWeightColorStyle(weight)}
                       /> Party</span
                     >
                   {:else if weight === 'Leggero (max 45 min)'}
@@ -170,7 +190,8 @@
                       ><Feather
                         size={20}
                         weight="fill"
-                        class="inline-block align-middle text-info"
+                        class="inline-block align-middle"
+                        style={getGameWeightColorStyle(weight)}
                       /> Leggero (max 45 min)</span
                     >
                   {:else if weight === 'Medio (1-2h)'}
@@ -178,7 +199,8 @@
                       ><PuzzlePiece
                         size={20}
                         weight="fill"
-                        class="inline-block align-middle text-success"
+                        class="inline-block align-middle"
+                        style={getGameWeightColorStyle(weight)}
                       /> Medio (1-2h)</span
                     >
                   {:else if weight === 'Estremo (>2h)'}
@@ -186,7 +208,8 @@
                       ><Skull
                         size={20}
                         weight="fill"
-                        class="inline-block align-middle text-error"
+                        class="inline-block align-middle"
+                        style={getGameWeightColorStyle(weight)}
                       /> Estremo (&gt;2h)</span
                     >
                   {:else}

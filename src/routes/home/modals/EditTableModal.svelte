@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import type { Table, GameWeight, BGGGame } from '$lib/types';
   import { ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, XIcon, TrashIcon } from 'phosphor-svelte';
+  import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
   import GameSearchInput from '../GameSearchInput.svelte';
 
 
@@ -146,13 +147,13 @@
               {#each weights as weight}
                 <option value={weight}>
                   {#if weight === 'Party'}
-                    <span class="inline-flex items-center gap-1"><ConfettiIcon size={20} weight="fill" class="inline-block align-middle text-warning" /> Party</span>
+                    <span class="inline-flex items-center gap-1"><ConfettiIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Party</span>
                   {:else if weight === 'Leggero (max 45 min)'}
-                    <span class="inline-flex items-center gap-1"><FeatherIcon size={20} weight="fill" class="inline-block align-middle text-info" /> Leggero (max 45 min)</span>
+                    <span class="inline-flex items-center gap-1"><FeatherIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Leggero (max 45 min)</span>
                   {:else if weight === 'Medio (1-2h)'}
-                    <span class="inline-flex items-center gap-1"><PuzzlePieceIcon size={20} weight="fill" class="inline-block align-middle text-success" /> Medio (1-2h)</span>
+                    <span class="inline-flex items-center gap-1"><PuzzlePieceIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Medio (1-2h)</span>
                   {:else if weight === 'Estremo (>2h)'}
-                    <span class="inline-flex items-center gap-1"><SkullIcon size={20} weight="fill" class="inline-block align-middle text-error" /> Estremo (&gt;2h)</span>
+                    <span class="inline-flex items-center gap-1"><SkullIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Estremo (&gt;2h)</span>
                   {:else}
                     {weight}
                   {/if}

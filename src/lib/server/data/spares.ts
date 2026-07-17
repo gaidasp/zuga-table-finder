@@ -10,6 +10,7 @@ const mapSparePlayer = (doc: SparePlayerDoc): SparePlayer => ({
   id: doc._id,
   name: doc.name,
   userId: doc.userId,
+  ownerUserId: doc.ownerUserId,
   avatarColor: doc.avatarColor,
   weight: doc.weight,
   nightDate: doc.nightDate,
@@ -30,6 +31,7 @@ export async function addSparePlayer(
   weight: GameWeight,
   name: string,
   userId: string | undefined,
+  ownerUserId: string | undefined,
   avatarColor: string | undefined,
   nightDate: string,
   createdAt: number = Date.now()
@@ -40,6 +42,7 @@ export async function addSparePlayer(
     weight,
     name,
     userId,
+    ownerUserId,
     avatarColor,
     nightDate,
     createdAt
@@ -57,4 +60,23 @@ export async function getSparePlayerById(sparePlayerId: string): Promise<SparePl
   const collection = await spareCollection();
   const spareDoc = await collection.findOne({ _id: sparePlayerId, kind: 'spare' });
   return spareDoc ? mapSparePlayer(spareDoc) : undefined;
+}
+
+export async function updateSparePlayer(
+  sparePlayerId: string,
+  input: { name: string; weight: GameWeight }
+): Promise<SparePlayer | undefined> {
+  const collection = await spareCollection();
+  const result = await collection.findOneAndUpdate(
+    { _id: sparePlayerId, kind: 'spare' },
+    {
+      $set: {
+        name: input.name,
+        weight: input.weight
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? mapSparePlayer(result) : undefined;
 }

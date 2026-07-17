@@ -14,7 +14,7 @@ export const AVATAR_ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp
 export type UserDoc = {
   _id: string;
   kind: 'user';
-  guid: string;
+  code: string;
   codeHash?: string;
   codePreview?: string;
   avatarColor?: string;
@@ -24,6 +24,7 @@ export type UserDoc = {
   createdAt: number;
   updatedAt: number;
   lastLoginAt: number | null;
+  preferredView: 'vertical' | 'horizontal';
 };
 
 export type SessionDoc = {
@@ -46,12 +47,13 @@ export const toAuthUser = (doc: UserDoc): AuthUser => ({
   nickname: doc.nickname,
   avatarDataUrl: doc.avatarDataUrl,
   avatarColor: doc.avatarColor ?? getAvatarBgClass(doc._id),
-  isAdmin: doc.isAdmin
+  isAdmin: doc.isAdmin,
+  preferredView: doc.preferredView === 'horizontal' ? 'horizontal' : 'vertical'
 });
 
 export const toAuthUserSummary = (doc: UserDoc): AuthUserSummary => ({
   ...toAuthUser(doc),
-  code: doc.guid,
+  code: doc.code,
   createdAt: doc.createdAt
 });
 
@@ -89,7 +91,7 @@ export const propagateNicknameToParticipations = async (userId: string, nickname
 export const toUserDoc = (doc: AuthDoc | null): UserDoc | null => {
   if (!doc || doc.kind !== 'user') return null;
   const userDoc = doc as Partial<UserDoc> & { kind: 'user'; _id: string };
-  if (typeof userDoc.guid === 'string' && userDoc.guid.length > 0) {
+  if (typeof userDoc.code === 'string' && userDoc.code.length > 0) {
     return userDoc as UserDoc;
   }
 

@@ -1,6 +1,6 @@
 # Zuga Table Finder
 
-App SvelteKit mobile-first per creare tavoli da gioco da tavolo o iscriversi a categorie con accesso tramite codice GUID (senza password). Include protezioni anti-abuso di base (honeypot + rate limit lato server) e GitHub Actions per CI.
+App SvelteKit mobile-first per creare tavoli da gioco da tavolo o iscriversi a categorie con accesso tramite codice (senza password). Include protezioni anti-abuso di base (honeypot + rate limit lato server) e GitHub Actions per CI.
 
 ## Stack
 - SvelteKit + TypeScript
@@ -64,16 +64,17 @@ See [docs/TESTING.md](docs/TESTING.md) for detailed test documentation.
 
 ## Come provare i flussi
 - Da guest puoi visualizzare tutti i tavoli e le liste giocatori.
-- Effettua login dal pulsante in header con il tuo GUID per abilitare le modifiche.
+- Effettua login dal pulsante in header con il tuo CODICE per abilitare le modifiche.
 - Aggiorna nickname/avatar da `/profile`.
-- Genera nuovi GUID da `/admin/users` con account admin o `ADMIN_MASTER_CODE`.
+- Genera nuovi CODICI da `/admin/users` con account admin o `ADMIN_MASTER_CODE`.
 
 ## Variabili d'ambiente richieste
 - `MONGODB_URI`: Connection string MongoDB (obbligatorio)
 - `MONGO_URI`: Alias opzionale di `MONGODB_URI`, utile in container/runtime server
 - `MONGODB_DB`: Nome del database (opzionale, default: 'Zuga')
 - `BGG_API_KEY`: API key BGG usata dalla route server `/api/bgg/search`
-- `ADMIN_MASTER_CODE`: Codice admin speciale per creare nuovi utenti GUID senza login admin (opzionale ma consigliato)
+- `ADMIN_MASTER_CODE`: Codice admin speciale per creare nuovi utenti senza login admin (opzionale ma consigliato)
+- `JWT_SECRET`: Secret usato per firmare e verificare i JWT di sessione (fortemente consigliato in produzione)
 
 ## Docker e variabili runtime
 L'app legge `MONGO_URI` / `MONGODB_URI` e `BGG_API_KEY` a runtime dal server environment.

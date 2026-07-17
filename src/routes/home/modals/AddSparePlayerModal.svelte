@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, XIcon  } from 'phosphor-svelte';
   import type { GameWeight } from '$lib/types';
+  import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
 
   let {
     open = false,
@@ -15,9 +16,13 @@
 
 
   let defaultWeight: GameWeight = $state('Medio (1-2h)');
+  let name = $state('');
   let errorMsg: string | null = $state('');
   $effect(() => {
-    if (open) errorMsg = '';
+    if (open) {
+      errorMsg = '';
+      name = '';
+    }
   });
 
   function enhanceHandler() {
@@ -72,20 +77,31 @@
           {#if errorMsg}
             <div class="alert alert-error alert-soft text-sm">{errorMsg}</div>
           {/if}
-          <p class="text-sm opacity-70">Verrà usato il tuo nickname profilo.</p>
+          <div class="form-control flex flex-col gap-1">
+            <label class="label" for="spare-player-name">Nome giocatore</label>
+            <input
+              id="spare-player-name"
+              name="name"
+              class="input"
+              bind:value={name}
+              maxlength="48"
+              placeholder="Lascia vuoto per usare il tuo nickname"
+            />
+            <span class="label-text-alt opacity-70">Puoi inserire un ospite oppure lasciare vuoto per usare il nickname profilo.</span>
+          </div>
           <div class="form-control flex flex-col gap-1">
             <label class="label" for="spare-player-weight">Peso preferito</label>
             <select id="spare-player-weight" name="weight" class="select" required bind:value={defaultWeight}>
               {#each weights as weight}
                 <option value={weight}>
                   {#if weight === 'Party'}
-                    <span class="inline-flex items-center gap-1"><ConfettiIcon size={20} weight="fill" class="inline-block align-middle text-warning" /> Party</span>
+                    <span class="inline-flex items-center gap-1"><ConfettiIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Party</span>
                   {:else if weight === 'Leggero (max 45 min)'}
-                    <span class="inline-flex items-center gap-1"><FeatherIcon size={20} weight="fill" class="inline-block align-middle text-info" /> Leggero (max 45 min)</span>
+                    <span class="inline-flex items-center gap-1"><FeatherIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Leggero (max 45 min)</span>
                   {:else if weight === 'Medio (1-2h)'}
-                    <span class="inline-flex items-center gap-1"><PuzzlePieceIcon size={20} weight="fill" class="inline-block align-middle text-success" /> Medio (1-2h)</span>
+                    <span class="inline-flex items-center gap-1"><PuzzlePieceIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Medio (1-2h)</span>
                   {:else if weight === 'Estremo (>2h)'}
-                    <span class="inline-flex items-center gap-1"><SkullIcon size={20} weight="fill" class="inline-block align-middle text-error" /> Estremo (&gt;2h)</span>
+                    <span class="inline-flex items-center gap-1"><SkullIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Estremo (&gt;2h)</span>
                   {:else}
                     {weight}
                   {/if}

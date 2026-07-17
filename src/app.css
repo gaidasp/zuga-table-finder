@@ -46,6 +46,10 @@
 
 :root {
   color-scheme: light;
+  --game-weight-party-color: oklch(62% 0.24 325);
+  --game-weight-light-color: oklch(60% 0.19 155);
+  --game-weight-medium-color: oklch(58% 0.21 255);
+  --game-weight-extreme-color: oklch(56% 0.23 25);
 }
 
 
@@ -61,4 +65,20 @@ body {
 .textarea {
   width: 100%;
   max-width: none;
+}
+
+.table-full-striped {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 8px,
+    var(--color-base-300) 8px 11px
+  );
+}
+
+.table-full-striped-indicator {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 2px,
+    var(--color-base-300) 2px 3px
+  );
 }
