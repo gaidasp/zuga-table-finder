@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { Confetti, Feather, PuzzlePiece, Skull, X } from 'phosphor-svelte';
+  import { ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, XIcon } from 'phosphor-svelte';
   import type { GameWeight, Table, BGGGame } from '$lib/types';
   import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
   import GameSearchInput from '../GameSearchInput.svelte';
@@ -138,7 +138,7 @@
             aria-label="Chiudi"
             onclick={close}
           >
-            <X size={18} weight="bold" aria-hidden="true" />
+            <XIcon size={18} weight="bold" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -178,7 +178,7 @@
                 <option value={weight}>
                   {#if weight === 'Party'}
                     <span class="inline-flex items-center gap-1"
-                      ><Confetti
+                      ><ConfettiIcon
                         size={20}
                         weight="fill"
                         class="inline-block align-middle"
@@ -187,7 +187,7 @@
                     >
                   {:else if weight === 'Leggero (max 45 min)'}
                     <span class="inline-flex items-center gap-1"
-                      ><Feather
+                      ><FeatherIcon
                         size={20}
                         weight="fill"
                         class="inline-block align-middle"
@@ -196,7 +196,7 @@
                     >
                   {:else if weight === 'Medio (1-2h)'}
                     <span class="inline-flex items-center gap-1"
-                      ><PuzzlePiece
+                      ><PuzzlePieceIcon
                         size={20}
                         weight="fill"
                         class="inline-block align-middle"
@@ -205,7 +205,7 @@
                     >
                   {:else if weight === 'Estremo (>2h)'}
                     <span class="inline-flex items-center gap-1"
-                      ><Skull
+                      ><SkullIcon
                         size={20}
                         weight="fill"
                         class="inline-block align-middle"

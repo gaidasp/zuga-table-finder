@@ -87,7 +87,7 @@
 </script>
 
 <article
-  class={`card bg-base-100 card-border border-base-300 transition hover:shadow-lg w-full ${table.players.length === table.seats ? 'table-full-striped' : ''}`}
+  class={`card bg-base-100 card-border border-base-300 transition hover:shadow-lg w-full ${table.players.length >= table.seats ? 'table-full-striped' : ''}`}
 >
   <div class="border-base-300 ">
     <div class="flex items-center justify-between gap-0 p-2 px-3 pb-2 w-full">
@@ -148,7 +148,7 @@
           </a>
         {/if}
         <span
-          class={`badge ${table.players.length > table.seats ? 'badge-warning' : 'badge-primary'} badge-soft`}
+          class={`badge ${table.players.length > table.seats ? 'badge-error' : 'badge-primary'} badge-soft`}
         >
           {table.players.length}/{table.seats}
         </span>

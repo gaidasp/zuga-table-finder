@@ -173,7 +173,7 @@
 
           {#if table.bggGame}
             <div class="flex items-center justify-center gap-2 text-xs">
-              <span class="font-semibold">Gioco:</span>
+              <span class="font-semibold">Link BGG:</span>
               <a
                 href={table.bggGame.url}
                 target="_blank"
@@ -246,8 +246,6 @@
             </div>
           {/if}
         </div>
-
-        <div class="divider my-0"></div>
 
         {#if canManageTable}
           <div class="card-actions items-center justify-between p-2">
