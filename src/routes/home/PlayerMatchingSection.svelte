@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { TrashIcon, UserIcon, ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, PencilSimpleIcon } from 'phosphor-svelte';
+  import { TrashIcon, UserIcon, ConfettiIcon, FeatherIcon, HourglassHighIcon, PuzzlePieceIcon, PencilSimpleIcon } from 'phosphor-svelte';
   import type { AuthUser, SparePlayer, GameWeight } from '$lib/types';
   import { getAvatarBgClass } from '$lib/utils/avatar';
   import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
@@ -130,7 +130,7 @@
                     {:else if group.weight === 'Medio (1-2h)'}
                       <PuzzlePieceIcon size={20} weight="fill" style={getGameWeightColorStyle(group.weight)} />
                     {:else if group.weight === 'Estremo (>2h)'}
-                      <SkullIcon size={20} weight="fill" style={getGameWeightColorStyle(group.weight)} />
+                      <HourglassHighIcon size={20} weight="fill" style={getGameWeightColorStyle(group.weight)} />
                     {/if}
                     {group.weight}
                   </span>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, XIcon  } from 'phosphor-svelte';
+  import { ConfettiIcon, FeatherIcon, HourglassHighIcon, PuzzlePieceIcon, XIcon  } from 'phosphor-svelte';
   import type { GameWeight } from '$lib/types';
   import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
 
@@ -101,7 +101,7 @@
                   {:else if weight === 'Medio (1-2h)'}
                     <span class="inline-flex items-center gap-1"><PuzzlePieceIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Medio (1-2h)</span>
                   {:else if weight === 'Estremo (>2h)'}
-                    <span class="inline-flex items-center gap-1"><SkullIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Estremo (&gt;2h)</span>
+                    <span class="inline-flex items-center gap-1"><HourglassHighIcon size={20} weight="fill" class="inline-block align-middle" style={getGameWeightColorStyle(weight)} /> Estremo (&gt;2h)</span>
                   {:else}
                     {weight}
                   {/if}

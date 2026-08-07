@@ -10,7 +10,7 @@
     ConfettiIcon,
     FeatherIcon,
     PuzzlePieceIcon,
-    SkullIcon,
+    HourglassHighIcon,
     GraduationCapIcon
   } from 'phosphor-svelte';
   import { getPlayerBadgeStyle } from '$lib/utils/player';
@@ -119,7 +119,7 @@
             style={getGameWeightColorStyle(table.weight)}
           />
         {:else if table.weight === 'Estremo (>2h)'}
-          <SkullIcon
+          <HourglassHighIcon
             size={20}
             weight="fill"
             class="pointer-events-none shrink-0"

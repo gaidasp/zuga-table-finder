@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import { HouseIcon, InfoIcon } from 'phosphor-svelte';
   import { getAvatarBgClass } from '$lib/utils/avatar';
 
   const props = $props<{ data: PageData }>();
@@ -16,12 +17,29 @@
 <main class="min-h-screen bg-base-200 px-4 py-6 sm:px-6 sm:py-10">
   <section class="mx-auto max-w-2xl card bg-base-100 shadow-sm border border-base-300">
     <div class="border-base-300 border-b border-dashed">
-      <div class="flex items-center justify-between gap-2 p-4">
-        <div>
+      <div class="flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
           <h1 class="card-title text-2xl">Profilo giocatore</h1>
           <p class="text-sm text-base-content/70">Aggiorna nickname e avatar per comparire nel menu utente.</p>
         </div>
-        <a class="btn btn-ghost btn-sm" href="/">Torna alla home</a>
+        <div class="flex shrink-0 items-center gap-1 self-start sm:self-auto">
+          <a
+            class="btn btn-sm btn-square btn-ghost"
+            href="/manuale"
+            aria-label="Apri manuale utente"
+            title="Manuale utente"
+          >
+            <InfoIcon size={18} weight="bold" aria-hidden="true" />
+          </a>
+          <a
+            class="btn btn-sm btn-square btn-ghost"
+            href="/"
+            aria-label="Torna alla home"
+            title="Torna alla home"
+          >
+            <HouseIcon size={18} weight="bold" aria-hidden="true" />
+          </a>
+        </div>
       </div>
     </div>
 

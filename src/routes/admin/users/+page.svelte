@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ActionData, PageData } from './$types';
-  import { CaretDownIcon, CaretUpIcon, CheckIcon, CopyIcon, PencilSimpleIcon, TrashIcon, XIcon } from 'phosphor-svelte';
+  import { CaretDownIcon, CaretUpIcon, CheckIcon, CopyIcon, HouseIcon, PencilSimpleIcon, TrashIcon, XIcon } from 'phosphor-svelte';
 
   const props = $props<{ data: PageData; form?: ActionData }>();
 
@@ -99,7 +99,14 @@
           <h1 class="card-title text-2xl">Gestione utenti</h1>
           <p class="text-sm text-base-content/70">Genera codici di accesso da inviare ai giocatori per il login senza password.</p>
         </div>
-        <a class="btn btn-ghost btn-sm" href="/">Torna alla home</a>
+        <a
+          class="btn btn-sm btn-square btn-ghost"
+          href="/"
+          aria-label="Torna alla home"
+          title="Torna alla home"
+        >
+          <HouseIcon size={18} weight="bold" aria-hidden="true" />
+        </a>
       </div>
 
       <form method="POST" action="?/createUsers" class="space-y-4">

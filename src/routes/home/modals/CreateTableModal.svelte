@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { ConfettiIcon, FeatherIcon, PuzzlePieceIcon, SkullIcon, XIcon } from 'phosphor-svelte';
+  import { ConfettiIcon, FeatherIcon, HourglassHighIcon, PuzzlePieceIcon, XIcon } from 'phosphor-svelte';
   import type { GameWeight, Table, BGGGame } from '$lib/types';
   import { getGameWeightColorStyle } from '$lib/utils/tableWeight';
   import GameSearchInput from '../GameSearchInput.svelte';
@@ -205,7 +205,7 @@
                     >
                   {:else if weight === 'Estremo (>2h)'}
                     <span class="inline-flex items-center gap-1"
-                      ><SkullIcon
+                      ><HourglassHighIcon
                         size={20}
                         weight="fill"
                         class="inline-block align-middle"
