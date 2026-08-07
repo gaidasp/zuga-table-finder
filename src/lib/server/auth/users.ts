@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { getRandomAvatarBgClass } from '$lib/shared/utils/avatar';
+import { getRandomAvatarBgClass } from '$lib/utils/avatar';
 import type { AuthUser, AuthUserSummary } from '$lib/types';
 import {
   authCollection,
@@ -13,14 +13,6 @@ import {
   toUserDoc,
   type UserDoc
 } from './common';
-
-export const hasAdminMasterCode = () => Boolean(process.env.ADMIN_MASTER_CODE?.trim());
-
-export const validateAdminMasterCode = (input: string | null | undefined) => {
-  const expected = process.env.ADMIN_MASTER_CODE?.trim();
-  if (!expected) return false;
-  return normalizeCode(input) === expected;
-};
 
 export const createUserWithCode = async (input?: {
   nickname?: string | null;

@@ -116,6 +116,7 @@
         <div class="space-y-3">
           {#each groupedSparePlayers as group (group.weight)}
             {#if group.players.length > 0}
+              {@const hasManageableSpare = group.players.some(canDeleteSpare)}
               <div
                 class="collapse collapse-arrow border border-base-300 bg-base-100 hover:border-base-400"
               >
@@ -138,12 +139,18 @@
                 </div>
                 <div class="collapse-content">
                   <div class="overflow-x-auto">
-                    <table class="table table-sm">
+                    <table class="table table-sm table-fixed w-full">
+                      <colgroup>
+                        <col />
+                        {#if hasManageableSpare}
+                          <col style="width: 4.5rem;" />
+                        {/if}
+                      </colgroup>
                       <tbody>
                         {#each group.players as sparePlayer}
                           <tr>
-                            <td class="font-medium align-middle">
-                              <div class="flex items-center gap-1">
+                            <td class="min-w-0 font-medium align-middle">
+                              <div class="flex min-w-0 items-center gap-1 whitespace-nowrap">
                                 {#if shouldUseProfilePhoto(sparePlayer.name)}
                                   <span class="inline-flex h-4 w-4 shrink-0 overflow-hidden rounded-full aspect-square" aria-hidden="true">
                                     <img
@@ -160,36 +167,33 @@
                                     {getInitial(sparePlayer.name)}
                                   </span>
                                 {/if}
-                                {sparePlayer.name}
+                                <span class="truncate">{sparePlayer.name}</span>
                               </div>
                             </td>
-                            <td class="text-right text-xs text-base-content/70">
-                              aggiunto/a il {new Date(sparePlayer.createdAt).toLocaleDateString('it-IT', {
-                                dateStyle: 'short'
-                              })} alle {new Date(sparePlayer.createdAt).toLocaleTimeString('it-IT', {
-                                timeStyle: 'short'
-                              })}
-                            </td>
-                            {#if canDeleteSpare(sparePlayer)}
-                              <td class="text-right">
-                                {#if canEditSpare(sparePlayer)}
-                                  <button
-                                    type="button"
-                                    class="btn btn-xs btn-ghost hover:btn-outline focus-visible:outline-none focus-visible:ring"
-                                    aria-label={`Modifica ${sparePlayer.name}`}
-                                    onclick={() => editModal.open(sparePlayer)}
-                                  >
-                                    <PencilSimpleIcon size={14} weight="bold" aria-hidden="true" />
-                                  </button>
+                            {#if hasManageableSpare}
+                              <td class="whitespace-nowrap text-right">
+                                {#if canDeleteSpare(sparePlayer)}
+                                  <div class="flex flex-nowrap justify-end gap-1">
+                                    {#if canEditSpare(sparePlayer)}
+                                      <button
+                                        type="button"
+                                        class="btn btn-xs btn-square btn-ghost p-0 hover:btn-outline focus-visible:outline-none focus-visible:ring"
+                                        aria-label={`Modifica ${sparePlayer.name}`}
+                                        onclick={() => editModal.open(sparePlayer)}
+                                      >
+                                        <PencilSimpleIcon size={14} weight="bold" aria-hidden="true" />
+                                      </button>
+                                    {/if}
+                                    <button
+                                      type="button"
+                                      class="btn btn-xs btn-square btn-ghost btn-error p-0 hover:btn-outline focus-visible:outline-none focus-visible:ring"
+                                      aria-label={`Rimuovi ${sparePlayer.name}`}
+                                      onclick={() => deleteModal.open(sparePlayer)}
+                                    >
+                                      <TrashIcon size={14} weight="bold" aria-hidden="true" />
+                                    </button>
+                                  </div>
                                 {/if}
-                                <button
-                                  type="button"
-                                  class="btn btn-xs btn-ghost btn-error hover:btn-outline focus-visible:outline-none focus-visible:ring"
-                                  aria-label={`Rimuovi ${sparePlayer.name}`}
-                                  onclick={() => deleteModal.open(sparePlayer)}
-                                >
-                                  <TrashIcon size={14} weight="bold" aria-hidden="true" />
-                                </button>
                               </td>
                             {/if}
                           </tr>

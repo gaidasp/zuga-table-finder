@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import type { Filter, UpdateFilter, UpdateOptions } from 'mongodb';
 import type { AuthUser, AuthUserSummary } from '$lib/types';
 import { db } from '$server/data';
-import { getAvatarBgClass } from '$lib/shared/utils/avatar';
+import { getAvatarBgClass } from '$lib/utils/avatar';
 
 const AUTH_COLLECTION_NAME = 'ZugaTableFinder';
 const NICKNAME_LIMIT = 48;

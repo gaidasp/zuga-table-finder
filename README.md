@@ -66,14 +66,13 @@ See [docs/TESTING.md](docs/TESTING.md) for detailed test documentation.
 - Da guest puoi visualizzare tutti i tavoli e le liste giocatori.
 - Effettua login dal pulsante in header con il tuo CODICE per abilitare le modifiche.
 - Aggiorna nickname/avatar da `/profile`.
-- Genera nuovi CODICI da `/admin/users` con account admin o `ADMIN_MASTER_CODE`.
+- Genera nuovi CODICI da `/admin/users` con un account admin.
 
 ## Variabili d'ambiente richieste
 - `MONGODB_URI`: Connection string MongoDB (obbligatorio)
 - `MONGO_URI`: Alias opzionale di `MONGODB_URI`, utile in container/runtime server
 - `MONGODB_DB`: Nome del database (opzionale, default: 'Zuga')
 - `BGG_API_KEY`: API key BGG usata dalla route server `/api/bgg/search`
-- `ADMIN_MASTER_CODE`: Codice admin speciale per creare nuovi utenti senza login admin (opzionale ma consigliato)
 - `JWT_SECRET`: Secret usato per firmare e verificare i JWT di sessione (fortemente consigliato in produzione)
 
 ## Docker e variabili runtime

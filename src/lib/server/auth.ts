@@ -12,11 +12,9 @@ export {
   createUserWithCode,
   deleteManagedUser,
   getUserById,
-  hasAdminMasterCode,
   listUsers,
   removeUserAvatar,
   updateManagedUser,
   updateUserPreferredView,
-  updateUserProfile,
-  validateAdminMasterCode
+  updateUserProfile
 } from './auth/users';

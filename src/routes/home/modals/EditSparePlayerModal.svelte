@@ -63,6 +63,13 @@
         <input type="text" name={honeypotName} class="hidden" tabindex="-1" autocomplete="off" />
         <input type="hidden" name="id" value={sparePlayer.id} />
 
+        <p class="text-sm text-base-content/70">
+          Aggiunto/a il {new Date(sparePlayer.createdAt).toLocaleString('it-IT', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          })}
+        </p>
+
         <label class="form-control w-full">
           <span class="label-text mb-1">Nome</span>
           <input

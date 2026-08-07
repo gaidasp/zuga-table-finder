@@ -35,8 +35,8 @@ import {
   WEIGHTS,
   sanitizeNightDate,
   sanitizeTableId
-} from '$server/homePage/constants';
-import { buildPageData } from '$server/homePage/data';
+} from '$server/home/constants';
+import { buildPageData } from '$server/home/data';
 import {
   clean,
   cleanInt,
@@ -44,7 +44,7 @@ import {
   handleDatabaseActionError,
   isAdminUser,
   requireAuthenticated
-} from '$server/homePage/helpers';
+} from '$server/home/helpers';
 import { setServers } from "node:dns/promises";
 
 setServers(["1.1.1.1", "8.8.8.8"]);

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ActionData, PageData } from './$types';
-  import { PencilSimpleIcon, TrashIcon, XIcon } from 'phosphor-svelte';
+  import { CaretDownIcon, CaretUpIcon, CheckIcon, CopyIcon, PencilSimpleIcon, TrashIcon, XIcon } from 'phosphor-svelte';
 
   const props = $props<{ data: PageData; form?: ActionData }>();
 
@@ -10,17 +10,32 @@
   let selectedUserNickname = $state('');
   let selectedUserCode = $state('');
   let selectedUserIsAdmin = $state(false);
+  let selectedUserCreatedAt = $state<number | null>(null);
+  let copiedUserId = $state<string | null>(null);
+  let nicknameSort = $state<'asc' | 'desc'>('asc');
 
   const generatedCodes = $derived.by(() => (props.form as { generatedCodes?: string[] } | undefined)?.generatedCodes ?? []);
   const feedbackMessage = $derived.by(() => (props.form as { message?: string } | undefined)?.message ?? null);
-  const users = $derived.by(() => (props.form as { users?: PageData['users'] } | undefined)?.users ?? props.data.users);
+  const users = $derived.by(() => {
+    const source = (props.form as { users?: PageData['users'] } | undefined)?.users ?? props.data.users;
+    const direction = nicknameSort === 'asc' ? 1 : -1;
+
+    return [...source].sort((first, second) => {
+      const firstNickname = first.nickname?.trim() || first.code;
+      const secondNickname = second.nickname?.trim() || second.code;
+      return firstNickname.localeCompare(secondNickname, 'it', { sensitivity: 'base' }) * direction;
+    });
+  });
   const formName = $derived.by(() => (props.form as { form?: string } | undefined)?.form ?? null);
+  const adminUsers = $derived(users.filter((user) => user.isAdmin));
+  const normalUsers = $derived(users.filter((user) => !user.isAdmin));
 
   const openEditModal = (user: PageData['users'][number]) => {
     selectedUserId = user.id;
     selectedUserNickname = user.nickname ?? '';
     selectedUserCode = user.code;
     selectedUserIsAdmin = user.isAdmin;
+    selectedUserCreatedAt = user.createdAt;
     editModalOpen = true;
   };
 
@@ -36,6 +51,36 @@
 
   const closeDeleteModal = () => {
     deleteModalOpen = false;
+  };
+
+  const toggleNicknameSort = () => {
+    nicknameSort = nicknameSort === 'asc' ? 'desc' : 'asc';
+  };
+
+  const copyUserCredentials = async (userId: string, nickname: string | null, code: string) => {
+    try {
+      const credentials = `${nickname?.trim() || '-'}\n${code}`;
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(credentials);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = credentials;
+        input.setAttribute('readonly', '');
+        input.style.position = 'absolute';
+        input.style.left = '-9999px';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+
+      copiedUserId = userId;
+      setTimeout(() => {
+        if (copiedUserId === userId) copiedUserId = null;
+      }, 1500);
+    } catch {
+      copiedUserId = null;
+    }
   };
 
   $effect(() => {
@@ -112,55 +157,107 @@
         </section>
       {/if}
 
-      <section class="space-y-2">
-        <h2 class="card-title text-lg">Utenti registrati</h2>
-        {#if users.length === 0}
-          <p class="text-sm text-base-content/70">Nessun utente creato.</p>
-        {:else}
-          <div class="overflow-x-auto">
-            <table class="table table-sm">
-              <thead>
+      {#snippet usersTable(userList: PageData['users'])}
+        <div class="overflow-x-auto">
+          <table class="table table-sm table-fixed w-full">
+            <colgroup>
+              <col />
+              <col style="width: 6.5rem;" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1 hover:underline focus-visible:outline-none focus-visible:ring"
+                    aria-label={`Ordina nickname in ordine ${nicknameSort === 'asc' ? 'decrescente' : 'crescente'}`}
+                    onclick={toggleNicknameSort}
+                  >
+                    Nickname
+                    {#if nicknameSort === 'asc'}
+                      <CaretUpIcon size={14} weight="bold" aria-hidden="true" />
+                    {:else}
+                      <CaretDownIcon size={14} weight="bold" aria-hidden="true" />
+                    {/if}
+                  </button>
+                </th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each userList as user}
                 <tr>
-                  <th>Nickname</th>
-                  <th>Ruolo</th>
-                  <th>Codice</th>
-                  <th>Creato il</th>
-                  <th>Azioni</th>
+                  <td class="break-words">
+                    {user.nickname ?? '-'}
+                  </td>
+                  <td class="whitespace-nowrap">
+                    <div class="flex flex-nowrap items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-square btn-ghost shrink-0 p-0"
+                        aria-label={`Copia nickname e codice di ${user.nickname ?? user.code}`}
+                        title="Copia nickname e codice"
+                        onclick={() => copyUserCredentials(user.id, user.nickname, user.code)}
+                      >
+                        {#if copiedUserId === user.id}
+                          <CheckIcon size={14} weight="bold" aria-hidden="true" />
+                        {:else}
+                          <CopyIcon size={14} weight="bold" aria-hidden="true" />
+                        {/if}
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-square btn-ghost p-0"
+                        aria-label={`Modifica ${user.nickname ?? user.code}`}
+                        onclick={() => openEditModal(user)}
+                      >
+                        <PencilSimpleIcon size={14} weight="bold" />
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-square btn-ghost btn-error p-0"
+                        aria-label={`Elimina ${user.nickname ?? user.code}`}
+                        onclick={() => openDeleteModal(user)}
+                      >
+                        <TrashIcon size={14} weight="bold" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {#each users as user}
-                  <tr>
-                    <td>{user.nickname ?? '-'}</td>
-                    <td>{user.isAdmin ? 'Admin' : 'Giocatore'}</td>
-                    <td class="font-mono text-xs">{user.code}</td>
-                    <td>{new Date(user.createdAt).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                    <td>
-                      <div class="flex items-center gap-1 justify-end">
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-ghost"
-                          aria-label={`Modifica ${user.nickname ?? user.code}`}
-                          onclick={() => openEditModal(user)}
-                        >
-                          <PencilSimpleIcon size={14} weight="bold" />
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-ghost btn-error"
-                          aria-label={`Elimina ${user.nickname ?? user.code}`}
-                          onclick={() => openDeleteModal(user)}
-                        >
-                          <TrashIcon size={14} weight="bold" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {/if}
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {/snippet}
+
+      <section class="collapse collapse-arrow border border-base-300 bg-base-100 hover:border-base-400">
+        <input type="checkbox" />
+        <div class="collapse-title flex items-center justify-between">
+          <h2 class="card-title text-lg">Admin</h2>
+          <span class="badge badge-outline">{adminUsers.length}</span>
+        </div>
+        <div class="collapse-content">
+          {#if adminUsers.length === 0}
+            <p class="text-sm text-base-content/70">Nessun admin creato.</p>
+          {:else}
+            {@render usersTable(adminUsers)}
+          {/if}
+        </div>
+      </section>
+
+      <section class="collapse collapse-arrow border border-base-300 bg-base-100 hover:border-base-400">
+        <input type="checkbox" />
+        <div class="collapse-title flex items-center justify-between">
+          <h2 class="card-title text-lg">Utenti normali</h2>
+          <span class="badge badge-outline">{normalUsers.length}</span>
+        </div>
+        <div class="collapse-content">
+          {#if normalUsers.length === 0}
+            <p class="text-sm text-base-content/70">Nessun utente creato.</p>
+          {:else}
+            {@render usersTable(normalUsers)}
+          {/if}
+        </div>
       </section>
     </div>
   </section>
@@ -181,6 +278,15 @@
       <form method="POST" action="?/editUser">
         <div class="card-body gap-4">
           <input type="hidden" name="userId" value={selectedUserId} />
+
+          {#if selectedUserCreatedAt}
+            <p class="text-sm text-base-content/70">
+              Creato il {new Date(selectedUserCreatedAt).toLocaleString('it-IT', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+              })}
+            </p>
+          {/if}
 
           <div class="form-control flex flex-col gap-1">
             <label class="label" for="edit-user-nickname">Nickname</label>

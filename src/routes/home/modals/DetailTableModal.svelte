@@ -103,6 +103,8 @@
           (player.ownerUserId ? authUser.id === player.ownerUserId : false)
         )
     );
+
+  const hasDeletablePlayer = $derived(Boolean(table?.players.some(canDeletePlayer)));
 </script>
 
 {#if open && table}
@@ -192,13 +194,20 @@
               <span class="badge badge-outline">Tavolo vuoto: invita qualcuno!</span>
             </div>
           {:else}
-            <div>
-              <table class="table table-sm w-full ">
+            <div class="min-w-0">
+              <table class="table table-sm table-fixed w-full">
+                <colgroup>
+                  <col style="width: 56%;" />
+                  <col />
+                  {#if hasDeletablePlayer}
+                    <col style="width: 3rem;" />
+                  {/if}
+                </colgroup>
                 <tbody>
                   {#each [...table.players].sort((a, b) => (b.isTeacher ? 1 : 0) - (a.isTeacher ? 1 : 0)) as player}
                     {@const playerBadge = getPlayerBadgeStyle(player.isBeginner, player.isTeacher)}
                     <tr>
-                      <td class="text-sm px-2 py-1">
+                      <td class="w-2/5 text-sm px-2 py-1">
                         <button
                           type="button"
                           class="p-0 m-0 min-h-0 h-auto text-base text-sm hover:underline focus:underline focus-visible:outline-none focus-visible:ring truncate"
@@ -209,9 +218,9 @@
                           {player.name}
                         </button>
                       </td>
-                      <td class="px-2 py-1 text-sm">
+                      <td class="min-w-0 px-2 py-1 text-sm">
                         <span
-                          class={playerBadge.className}
+                          class={`${playerBadge.className} max-w-full whitespace-normal break-words justify-center`}
                           title={player.isTeacher
                             ? 'Spiegatore'
                             : player.isBeginner
@@ -219,7 +228,7 @@
                               : 'Esperto'}
                         >
                           <playerBadge.Icon size={14} weight="fill" aria-hidden="true" />
-                          <span
+                          <span class="hidden sm:inline"
                             >{player.isTeacher
                               ? 'Spiegatore'
                               : player.isBeginner
@@ -228,15 +237,17 @@
                           >
                         </span>
                       </td>
-                      {#if canDeletePlayer(player)}
+                      {#if hasDeletablePlayer}
                         <td class="text-right px-2 py-1">
-                          <button
-                            class="btn btn-xs btn-ghost btn-error focus-visible:outline-none focus-visible:ring"
-                            aria-label={`Rimuovi ${player.name}`}
-                            onclick={() => handleDeletePlayerButton(player)}
-                          >
-                            <TrashIcon size={16} weight="bold" aria-hidden="true" />
-                          </button>
+                          {#if canDeletePlayer(player)}
+                            <button
+                              class="btn btn-xs btn-square btn-ghost btn-error p-0 focus-visible:outline-none focus-visible:ring"
+                              aria-label={`Rimuovi ${player.name}`}
+                              onclick={() => handleDeletePlayerButton(player)}
+                            >
+                              <TrashIcon size={16} weight="bold" aria-hidden="true" />
+                            </button>
+                          {/if}
                         </td>
                       {/if}
                     </tr>
